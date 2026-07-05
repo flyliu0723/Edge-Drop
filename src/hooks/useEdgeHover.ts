@@ -27,15 +27,15 @@ import { useStore } from '../store/appStore'
 const TRIGGER_PX = 3    // leftmost px that count as "the edge"
 const DWELL_MS = 120     // cursor must linger this long to open
 const GRACE_MS = 250     // close delay after leaving
-const PANEL_WIDE = 280   // blade is ~270px (var(--panel-width)); grace margin
+const PANEL_WIDE = 270   // blade is 270px (var(--panel-width))
 /** Hysteresis thresholds for closing the panel.
  * KEEP_OPEN_PX: if cursor x is <= this, the panel stays open (clearly inside blade).
  * START_CLOSE_PX: if cursor x is > this, start the close timer (clearly outside).
  * Gap between the two prevents rapid cancel/schedule oscillation at the blade edge
  * when the cursor hovers just outside the visual boundary.
  */
-const KEEP_OPEN_PX = PANEL_WIDE - 30  // 250 — clearly inside blade
-const START_CLOSE_PX = PANEL_WIDE + 60 // 340 — clearly outside blade + window margin
+const KEEP_OPEN_PX = PANEL_WIDE - 15  // 255 — clearly inside blade
+const START_CLOSE_PX = PANEL_WIDE + 20 // 290 — 20px buffer outside the visual boundary
 
 export const PANEL_LEAVE_EVENT = 'panel:leave'
 export const PANEL_ENTER_EVENT = 'panel:enter'

@@ -165,17 +165,26 @@ export function Panel() {
           position: 'absolute',
           left: 0,
           zIndex: 10,
-          pointerEvents: open ? 'auto' : 'none'
+          pointerEvents: open ? 'auto' : 'none',
+          originX: 0,
+          originY: 0.5
         }}
         animate={{
           clipPath: open
             ? 'inset(calc(0% - 100px) calc(0% - 100px) calc(0% - 100px) 0px round 0px 24px 24px 0px)'
-            : `inset(calc(50% - ${halfTrigger}px) calc(100% - 3px) calc(50% - ${halfTrigger}px) 0px round 0px 12px 12px 0px)`
+            : `inset(calc(50% - ${halfTrigger}px) calc(100% - 3px) calc(50% - ${halfTrigger}px) 0px round 0px 12px 12px 0px)`,
+          scale: open ? [0.92, 1.05, 0.98, 1] : 1
         }}
         transition={{
-          type: 'spring',
-          bounce: 0.5,
-          duration: 0.6
+          scale: {
+            duration: 0.55,
+            ease: [0.22, 1, 0.36, 1]
+          },
+          clipPath: {
+            type: 'spring',
+            bounce: 0.5,
+            duration: 0.6
+          }
         }}
       >
         <div className="flare-top">
@@ -204,9 +213,11 @@ export function Panel() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.15 }}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
               >
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, #000000, transparent)', pointerEvents: 'none', zIndex: 10 }} />
                 <Settings />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to top, #000000, transparent)', pointerEvents: 'none', zIndex: 10 }} />
               </motion.div>
             ) : (
               <motion.div

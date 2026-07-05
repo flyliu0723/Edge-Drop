@@ -105,6 +105,12 @@ export const ChevronUpIcon = (p: P) => (
   </svg>
 )
 
+export const ChevronDownIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path fill="currentColor" fillRule="evenodd" d="M4.293 7.793a1 1 0 0 1 1.414 0L12 14.086l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414" clipRule="evenodd" />
+  </svg>
+)
+
 export const FileIconGlyph = (p: P) => (
   <svg {...base(p)}>
     <g>		<g fill="currentColor" fillRule="evenodd" clipRule="evenodd">			<path d="M15.143 22H8.286A4.286 4.286 0 0 1 4 17.714V6.286A4.286 4.286 0 0 1 8.286 2h4.008a3.5 3.5 0 0 1 2.304.866l3.635 3.18a3.5 3.5 0 0 1 1.196 2.635v9.033A4.286 4.286 0 0 1 15.143 22m0-2H8.286A2.286 2.286 0 0 1 6 17.714V6.286A2.286 2.286 0 0 1 8.286 4h4.008a1.5 1.5 0 0 1 .987.371l3.635 3.18a1.5 1.5 0 0 1 .513 1.13v9.033A2.286 2.286 0 0 1 15.143 20" />			<path d="M13 3a1 1 0 0 1 1 1v3a1 1 0 0 0 1 1h2.5a1 1 0 1 1 0 2H15a3 3 0 0 1-3-3V4a1 1 0 0 1 1-1" />		</g>	</g>

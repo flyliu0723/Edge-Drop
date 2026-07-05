@@ -75,13 +75,11 @@ function setupTextDragImage(e: React.DragEvent, text: string, isUrl?: boolean) {
 /* ------------------------------------------------------------------ */
 
 function ClipboardItemBase({ item }: Props) {
-  const copy = useStore((s) => s.copy)
-  const paste = useStore((s) => s.paste)
-  const pasteSubitem = useStore((s) => s.pasteSubitem)
-  const togglePin = useStore((s) => s.togglePin)
-  const remove = useStore((s) => s.remove)
-  const setInternalDragReq = useStore((s) => s.setInternalDragReq)
-  const internalDragReq = useStore((s) => s.internalDragReq)
+  const copy = useStore.getState().copy
+  const paste = useStore.getState().paste
+  const togglePin = useStore.getState().togglePin
+  const remove = useStore.getState().remove
+  const setInternalDragReq = useStore.getState().setInternalDragReq
   const startDrag = useDragOut()
   const [copied, setCopied] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -126,22 +124,6 @@ function ClipboardItemBase({ item }: Props) {
     }, 220)
   }, [paste, item.id, onDoubleClick])
 
-  const onSubitemClick = useCallback((e: React.MouseEvent, req: import('../../shared/types').DragRequest) => {
-    e.stopPropagation()
-    if (clickTimerRef.current !== undefined) {
-      window.clearTimeout(clickTimerRef.current)
-      clickTimerRef.current = undefined
-      window.edge.copySubitem(req)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 900)
-      return
-    }
-    clickTimerRef.current = window.setTimeout(() => {
-      clickTimerRef.current = undefined
-      pasteSubitem(req)
-    }, 220)
-  }, [pasteSubitem])
-
   const onExpand = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation()
     if (isBundle) setExpanded(true)
@@ -175,7 +157,7 @@ function ClipboardItemBase({ item }: Props) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      initial={open ? { opacity: 0, y: 8, scale: 0.98 } : false}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.14 } }}
       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
@@ -188,23 +170,25 @@ function ClipboardItemBase({ item }: Props) {
         onDragStart={(e) => handleDragStart(e, { id: item.id })}
         onDragEnd={() => setInternalDragReq(null)}
         onDragOver={(e) => {
-          if (internalDragReq && internalDragReq.id !== item.id) {
+          const activeDrag = useStore.getState().internalDragReq
+          if (activeDrag && activeDrag.id !== item.id) {
             e.preventDefault()
-          } else if (internalDragReq && internalDragReq.id === item.id) {
+          } else if (activeDrag && activeDrag.id === item.id) {
             e.preventDefault()
             e.stopPropagation()
           }
         }}
         onDrop={(e) => {
-          if (internalDragReq && internalDragReq.id !== item.id) {
+          const activeDrag = useStore.getState().internalDragReq
+          if (activeDrag && activeDrag.id !== item.id) {
             e.preventDefault()
             e.stopPropagation()
             // If they drop an entire item or a subitem onto another item, we merge them.
             // Currently our merge logic merges the entire source item. 
             // In the future we might want to merge just the subitem.
-            window.edge.mergeItems(internalDragReq.id, item.id)
+            window.edge.mergeItems(activeDrag.id, item.id)
             setInternalDragReq(null)
-          } else if (internalDragReq && internalDragReq.id === item.id) {
+          } else if (activeDrag && activeDrag.id === item.id) {
             e.preventDefault()
             e.stopPropagation()
             setInternalDragReq(null)
@@ -283,6 +267,26 @@ function BundleFluidPreview({
   onRemove: () => void
   onCollapse: (e?: React.MouseEvent) => void
 }) {
+  const pasteSubitem = useStore((s) => s.pasteSubitem)
+  const [, setCopied] = useState(false)
+  const clickTimerRef = useRef<number | undefined>(undefined)
+
+  const onSubitemClick = useCallback((e: React.MouseEvent, req: import('../../shared/types').DragRequest) => {
+    e.stopPropagation()
+    if (clickTimerRef.current !== undefined) {
+      window.clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = undefined
+      window.edge.copySubitem(req)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 900)
+      return
+    }
+    clickTimerRef.current = window.setTimeout(() => {
+      clickTimerRef.current = undefined
+      pasteSubitem(req)
+    }, 220)
+  }, [pasteSubitem])
+
   if (item.data.kind === 'image-collection') {
     const more = item.data.images.length - 1
     return (

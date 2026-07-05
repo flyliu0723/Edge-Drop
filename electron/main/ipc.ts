@@ -6,10 +6,8 @@
  * is a compile-time error rather than a runtime one.
  */
 import { app, ipcMain, clipboard, nativeImage } from 'electron'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { execFile } from 'node:child_process'
-import { PATHS } from '../store/paths'
+import { existsSync } from 'node:fs'
 import { type InvokeMap, type InvokeChannel, type SendMap, type SendChannel } from '../../shared/ipc'
 import { getStore, loadSettings, saveSettings, pushState, addFiles, getWatcher } from './state'
 import { getMainWindow } from './window'
@@ -266,7 +264,7 @@ export function registerIpc(): void {
 
   handle('settings:update', (patch) => {
     const next = saveSettings(patch)
-    if (patch.launchAtLogin !== undefined) {
+    if (patch.launchAtLogin !== undefined && app.isPackaged) {
       try {
         app.setLoginItemSettings({
           openAtLogin: next.launchAtLogin,

@@ -9,11 +9,12 @@
  * dragged over the panel so the edge-hover hook knows not to close mid-drag.
  */
 import { AnimatePresence, motion } from 'framer-motion'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useLayoutEffect, useState } from 'react'
 import { useStore } from '../store/appStore'
 import { useFilteredItems } from '../hooks/useFilteredItems'
 import { ClipboardItemCard } from './ClipboardItem'
 import { EmptyState } from './EmptyState'
+import { ChevronUpIcon, ChevronDownIcon } from './icons'
 
 export function ItemList() {
   const { pinned, recent } = useFilteredItems()
@@ -22,14 +23,27 @@ export function ItemList() {
 
   const total = pinned.length + recent.length
   
-  const dragActive = useStore((s) => s.dragActive)
-  const internalDragReq = useStore((s) => s.internalDragReq)
+  const isDraggingAny = useStore((s) => !!s.dragActive || !!s.internalDragReq)
+  const open = useStore((s) => s.open)
   
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [pinnedCollapsed, setPinnedCollapsedState] = useState(() => {
+    const saved = localStorage.getItem('edge_drop_pinned_collapsed')
+    return saved !== null ? saved === 'true' : true // Compressed by default
+  })
+
+  const setPinnedCollapsed = (val: boolean) => {
+    setPinnedCollapsedState(val)
+    localStorage.setItem('edge_drop_pinned_collapsed', String(val))
+  }
   
-  const firstItemId = (pinned[0] || recent[0])?.id
-  const prevFirstItemId = useRef(firstItemId)
-  const prevTotal = useRef(total)
+  const topRecentId = recent[0]?.id
+  const topRecentTime = recent[0]?.capturedAt
+  const topPinnedTime = pinned[0]?.capturedAt
+
+  const prevTopRecentId = useRef(topRecentId)
+  const prevTopRecentTime = useRef(topRecentTime)
+  const prevTopPinnedTime = useRef(topPinnedTime)
 
   const scrollRaf = useRef<number | null>(null)
   const scrollVelocity = useRef<number>(0)
@@ -40,22 +54,60 @@ export function ItemList() {
     }
   }, [])
 
-  useEffect(() => {
-    // If the first item changed and the total didn't decrease, a new item was likely added (copied/split).
-    if (firstItemId !== prevFirstItemId.current && total >= prevTotal.current) {
-      if (listRef.current) {
-        listRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+  const prevOpen = useRef(open)
+  const lastClosedAt = useRef<number>(Date.now())
+  const lastClosedTopId = useRef<string | undefined>(topRecentId)
+  const lastClosedTopTime = useRef<number | undefined>(topRecentTime)
+  const lastClosedTopPinnedTime = useRef<number | undefined>(topPinnedTime)
+
+  useLayoutEffect(() => {
+    if (!open && prevOpen.current) {
+      // Panel just closed: record timestamps and top item ids
+      lastClosedAt.current = Date.now()
+      lastClosedTopId.current = topRecentId
+      lastClosedTopTime.current = topRecentTime
+      lastClosedTopPinnedTime.current = topPinnedTime
+    } else if (open && !prevOpen.current) {
+      // Panel just opened: check if closed >= 60s OR if a new copy happened while closed
+      const timeSinceClosed = Date.now() - lastClosedAt.current
+      const hasNewCopyWhileClosed =
+        topRecentId !== lastClosedTopId.current ||
+        topRecentTime !== lastClosedTopTime.current ||
+        topPinnedTime !== lastClosedTopPinnedTime.current
+
+      if (timeSinceClosed >= 60000 || hasNewCopyWhileClosed) {
+        if (listRef.current) {
+          listRef.current.scrollTop = 0
+        }
       }
     }
-    prevFirstItemId.current = firstItemId
-    prevTotal.current = total
-  }, [firstItemId, total])
+    prevOpen.current = open
+  }, [open, topRecentId, topRecentTime, topPinnedTime])
+
+  useLayoutEffect(() => {
+    // If recent or pinned items changed/updated while panel is open, instantly jump to top without animation
+    if (open) {
+      const idChanged = topRecentId !== prevTopRecentId.current
+      const recentTimeChanged = topRecentTime !== prevTopRecentTime.current
+      const pinnedTimeChanged = topPinnedTime !== prevTopPinnedTime.current
+
+      if (idChanged || recentTimeChanged || pinnedTimeChanged) {
+        if (listRef.current) {
+          listRef.current.scrollTop = 0
+        }
+      }
+    }
+
+    prevTopRecentId.current = topRecentId
+    prevTopRecentTime.current = topRecentTime
+    prevTopPinnedTime.current = topPinnedTime
+  }, [open, topRecentId, topRecentTime, topPinnedTime])
 
   useEffect(() => {
-    if (!dragActive && !internalDragReq) {
+    if (!isDraggingAny) {
       stopScrolling()
     }
-  }, [dragActive, internalDragReq])
+  }, [isDraggingAny])
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (e.currentTarget.scrollTop > 50) {
@@ -123,9 +175,10 @@ export function ItemList() {
   }
 
   return (
-    <div 
+    <motion.div 
       className="list" 
       ref={listRef} 
+      layoutScroll
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeaveOrDrop}
       onDrop={handleDragLeaveOrDrop}
@@ -136,10 +189,25 @@ export function ItemList() {
       ) : (
         <>
           {pinned.length > 0 && (
-            <section>
-              <div className="section-label">Pinned</div>
+            <section className="pinned-section">
+              <div 
+                className={`section-label pinned-header-interactive ${pinnedCollapsed ? 'is-collapsed' : ''}`}
+                onClick={() => setPinnedCollapsed(!pinnedCollapsed)}
+                title={pinnedCollapsed ? "Click to expand pinned items" : "Click to compress pinned items"}
+              >
+                <div className="pinned-header-left">
+                  <span>Pinned</span>
+                  <span className="pinned-count-badge">{pinned.length}</span>
+                </div>
+                <div className="pinned-header-right">
+                  <span className="pinned-toggle-hint">{pinnedCollapsed ? 'Expand' : 'Compress'}</span>
+                  <button className="act bundle-collapse-btn">
+                    {pinnedCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
+                  </button>
+                </div>
+              </div>
               <AnimatePresence initial={false}>
-                {pinned.map((it) => (
+                {!pinnedCollapsed && pinned.map((it) => (
                   <ClipboardItemCard key={it.id} item={it} />
                 ))}
               </AnimatePresence>
@@ -175,6 +243,6 @@ export function ItemList() {
           </motion.button>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }

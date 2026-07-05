@@ -75,12 +75,14 @@ app.whenReady().then(() => {
 
   // Reflect incognito setting into the watcher immediately.
   const settings = loadSettings()
-  try {
-    app.setLoginItemSettings({
-      openAtLogin: settings.launchAtLogin,
-      path: app.getPath('exe')
-    })
-  } catch { /* ignore in non-packaged / sandbox */ }
+  if (app.isPackaged) {
+    try {
+      app.setLoginItemSettings({
+        openAtLogin: settings.launchAtLogin,
+        path: app.getPath('exe')
+      })
+    } catch { /* ignore in non-packaged / sandbox */ }
+  }
   registerIncognitoApplier((v) => getWatcher().setPaused(v))
   getWatcher().setPaused(settings.incognito)
   pushState.settings(settings)
