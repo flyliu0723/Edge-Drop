@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/Logo%20(4).png" alt="Edge-Drop Logo" width="100" height="100" />
+  <img src="public/Logo%20(4).png" alt="Edge-Drop Logo" width="150" height="150" />
 </p>
 
 <h1 align="center">Edge-Drop</h1>
@@ -24,15 +24,14 @@ When your cursor approaches the left boundary of your screen, Edge-Drop dynamica
 
 ## Showcase / Interaction Demos
 
-| 1. Welcome to Edge-Drop | 2. Collect Anything | 3. Drag & Drop Anywhere |
-|:---:|:---:|:---:|
-| <video src="https://github.com/Deepender25/Edge-Drop/raw/main/public/placeholder_welcome.mp4" width="250" autoplay loop muted playsinline></video> | <video src="https://github.com/Deepender25/Edge-Drop/raw/main/public/placeholder_copy.mp4" width="250" autoplay loop muted playsinline></video> | <video src="https://github.com/Deepender25/Edge-Drop/raw/main/public/placeholder_drag.mp4" width="250" autoplay loop muted playsinline></video> |
-
-| 4. Explore File Stacks | 5. Ungroup & Split Stacks | 6. Combine & Merge Items |
-|:---:|:---:|:---:|
-| <video src="https://github.com/Deepender25/Edge-Drop/raw/main/public/placeholder_stacks.mp4" width="250" autoplay loop muted playsinline></video> | <video src="https://github.com/Deepender25/Edge-Drop/raw/main/public/placeholder_ungroup.mp4" width="250" autoplay loop muted playsinline></video> | <video src="https://github.com/Deepender25/Edge-Drop/raw/main/public/placeholder_merge.mp4" width="250" autoplay loop muted playsinline></video> |
+| | |
+|:---:|:---:|
+| **1. Welcome to Edge-Drop** <br> <video src="https://github.com/user-attachments/assets/118d59cc-9821-4da1-9424-ea9bc1b6e548" width="300" autoplay loop muted playsinline></video> | **2. Collect Anything** <br> <video src="https://github.com/user-attachments/assets/8daa18a7-d023-4e93-9f17-c30791a7c41c" width="300" autoplay loop muted playsinline></video> |
+| **3. Drag & Drop Anywhere** <br> <video src="https://github.com/user-attachments/assets/ac8bc411-0827-460c-828c-0799f4cee4d8" width="300" autoplay loop muted playsinline></video> | **4. Explore File Stacks** <br> <video src="https://github.com/user-attachments/assets/b1e47a2b-41d2-4958-8e42-4fefcaa8b26b" width="300" autoplay loop muted playsinline></video> |
+| **5. Ungroup & Split Stacks** <br> <video src="https://github.com/user-attachments/assets/e41eb9f8-62b0-4525-a28a-2bacafd0bb8c" width="300" autoplay loop muted playsinline></video> | **6. Combine & Merge Items** <br> <video src="https://github.com/user-attachments/assets/cee7d5f7-658b-433a-9fa0-6592a5a75fa4" width="300" autoplay loop muted playsinline></video> |
 
 ---
+
 
 ## Architectural & Data Flow Diagrams
 
