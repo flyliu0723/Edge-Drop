@@ -14,7 +14,7 @@
  * clamped preview; file items list names or bundle badge. Motion is handled by
  * the parent list (layout/AnimatePresence), so this component stays presentational.
  */
-import { memo, useState, useCallback, useEffect, useRef } from 'react'
+import { memo, useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ClipboardItemDto } from '../../shared/types'
 import { MAX_STACK } from '../../shared/types'
@@ -47,45 +47,9 @@ interface Props {
   item: ClipboardItemDto
 }
 
-let textDragPreviewEl: HTMLDivElement | null = null
 
-function setupTextDragImage(e: React.DragEvent, text: string, isUrl?: boolean) {
-  if (!textDragPreviewEl) {
-    textDragPreviewEl = document.createElement('div')
-    textDragPreviewEl.style.position = 'absolute'
-    textDragPreviewEl.style.top = '-9999px'
-    textDragPreviewEl.style.left = '-9999px'
-    textDragPreviewEl.style.width = '260px'
-    textDragPreviewEl.style.padding = '12px 14px'
-    textDragPreviewEl.style.background = 'linear-gradient(135deg, #2c2c30 0%, #1c1c1e 100%)'
-    textDragPreviewEl.style.border = '1.5px solid rgba(255, 255, 255, 0.15)'
-    textDragPreviewEl.style.borderRadius = '12px'
-    textDragPreviewEl.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.5)'
-    textDragPreviewEl.style.color = '#FFFFFF'
-    textDragPreviewEl.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    textDragPreviewEl.style.fontSize = '13px'
-    textDragPreviewEl.style.fontWeight = '500'
-    textDragPreviewEl.style.lineHeight = '1.4'
-    textDragPreviewEl.style.display = 'flex'
-    textDragPreviewEl.style.alignItems = 'flex-start'
-    textDragPreviewEl.style.gap = '10px'
-    textDragPreviewEl.style.pointerEvents = 'none'
-    textDragPreviewEl.style.zIndex = '9999'
-    document.body.appendChild(textDragPreviewEl)
-  }
 
-  const cleaned = text.replace(/[\r\n]+/g, ' ').trim()
-  const iconSvg = isUrl
-    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 2px; flex-shrink: 0;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`
-    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 2px; flex-shrink: 0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`
 
-  textDragPreviewEl.innerHTML = `
-    ${iconSvg}
-    <div style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; flex-grow: 1;">${cleaned}</div>
-  `
-
-  e.dataTransfer.setDragImage(textDragPreviewEl, 20, 20)
-}
 
 /* ------------------------------------------------------------------ */
 /* Main item card                                                      */
@@ -100,7 +64,7 @@ function ClipboardItemBase({ item }: Props) {
   const startDrag = useDragOut()
   const [copied, setCopied] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const clickTimerRef = useRef<number | undefined>(undefined)
+
   
   const open = useStore((s) => s.open)
   useEffect(() => {
@@ -342,25 +306,8 @@ function BundleFluidPreview({
   onRemove: () => void
   onCollapse: (e?: React.MouseEvent) => void
 }) {
-  const pasteSubitem = useStore((s) => s.pasteSubitem)
-  const [, setCopied] = useState(false)
-  const clickTimerRef = useRef<number | undefined>(undefined)
 
-  const onSubitemClick = useCallback((e: React.MouseEvent, req: import('../../shared/types').DragRequest) => {
-    e.stopPropagation()
-    if (clickTimerRef.current !== undefined) {
-      window.clearTimeout(clickTimerRef.current)
-      clickTimerRef.current = undefined
-      window.edge.copySubitem(req)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 900)
-      return
-    }
-    clickTimerRef.current = window.setTimeout(() => {
-      clickTimerRef.current = undefined
-      pasteSubitem(req)
-    }, 220)
-  }, [pasteSubitem])
+
 
   if (item.data.kind === 'image-collection') {
     const more = item.data.images.length - 1

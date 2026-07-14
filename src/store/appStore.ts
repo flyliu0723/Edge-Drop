@@ -8,7 +8,7 @@
  */
 import { create } from 'zustand'
 import { edge } from '../lib/edge'
-import type { ClipboardItemDto, Settings } from '../../shared/types'
+import type { ClipboardItemDto, Settings, DragRequest } from '../../shared/types'
 import { DEFAULT_SETTINGS } from '../../shared/types'
 
 /** A transient user-facing notice shown as a toast. */
@@ -35,6 +35,7 @@ interface AppState {
   internalDragReq: import('../../shared/types').DragRequest | null
   /** Active toasts (auto-dismissed after a short delay). */
   toasts: ToastMsg[]
+  tutorialStep: number
 
   /* hydration + sync */
   hydrate: () => Promise<void>
@@ -60,6 +61,7 @@ interface AppState {
   paste: (id: string) => Promise<void>
   pasteSubitem: (req: DragRequest) => Promise<void>
   patchSettings: (patch: Partial<Settings>) => Promise<void>
+  setTutorialStep: (step: number) => void
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -72,6 +74,7 @@ export const useStore = create<AppState>((set, get) => ({
   dragActive: false,
   internalDragReq: null,
   toasts: [],
+  tutorialStep: 0,
 
   async hydrate() {
     const { items, settings } = await edge.loadState()
@@ -144,5 +147,10 @@ export const useStore = create<AppState>((set, get) => ({
   async patchSettings(patch) {
     const next = await edge.updateSettings(patch)
     set({ settings: next })
+  },
+
+  setTutorialStep: (step) => {
+    set({ tutorialStep: step })
+    edge.broadcastTutorialStep(step)
   }
 }))

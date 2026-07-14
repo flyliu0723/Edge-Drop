@@ -31,14 +31,16 @@ export interface EdgeApi {
   setInteractive: (value: boolean) => Promise<void>
   minimizeWindow: () => Promise<void>
   setInternalDrag: (active: boolean) => void
+  broadcastTutorialStep: (step: number) => void
 
   /* Main -> Renderer */
   onItems: (cb: (items: import('./types').ClipboardItemDto[]) => void) => () => void
   onSettings: (cb: (settings: Settings) => void) => () => void
-  onToggle: (cb: () => void) => () => void
+  onToggle: (cb: (open?: boolean) => void) => () => void
   onOpenSettings: (cb: () => void) => () => void
   onDragEnd: (cb: () => void) => () => void
   onInternalDrop: (cb: (pos: { x: number; y: number }) => void) => () => void
   onCursorEdge: (cb: (data: { x: number; y: number; inEdge: boolean; inZone: boolean }) => void) => () => void
   onToast: (cb: (toast: { id: string; message: string; tone: 'info' | 'error' }) => void) => () => void
+  onTutorialStep: (cb: (step: number) => void) => () => void
 }

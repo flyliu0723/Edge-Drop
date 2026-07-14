@@ -51,14 +51,22 @@ function toast(message: string, tone: 'info' | 'error' = 'info'): void {
 
 /** Simulate pressing Ctrl+V via PowerShell after returning focus to the previous active window. */
 function simulatePaste(): void {
-  execFile('powershell.exe', [
-    '-NoProfile',
-    '-NonInteractive',
-    '-Command',
-    "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('^v')"
-  ], (err) => {
-    if (err) console.error('[Main] simulatePaste error:', err)
-  })
+  if (process.platform === 'win32') {
+    // Run via the persistent powershell host for near-zero latency (no process spawn overhead)
+    psHost.run("Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('^v')", 2000)
+      .catch((err) => {
+        console.error('[Main] simulatePaste psHost failed, using fallback:', err)
+        // Fallback to spawning a new powershell process
+        execFile('powershell.exe', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('^v')"
+        ], (fallbackErr) => {
+          if (fallbackErr) console.error('[Main] simulatePaste fallback error:', fallbackErr)
+        })
+      })
+  }
 }
 
 /**
@@ -277,13 +285,14 @@ export function registerIpc(): void {
       // genuinely copies the content from a source app (detected by the watcher).
       // Pasting from Edge-Drop is a retrieval action, not a new copy.
 
-      // Close panel so focus returns to the user's active input/text box
-      pushState.togglePanel()
+      // Close panel so focus returns to the user's active input/text box.
+      // Pass false to explicitly close and avoid toggle race conditions.
+      pushState.togglePanel(false)
 
-      // Wait 200ms for OS focus to settle, then simulate Ctrl+V
+      // Wait 50ms for layout updates, then simulate Ctrl+V
       setTimeout(() => {
         simulatePaste()
-      }, 200)
+      }, 50)
     } finally {
       // Invalidate (not resync) the watcher signature after the pause expires.
       // This ensures that if the user re-copies the SAME content from the source
@@ -333,11 +342,13 @@ export function registerIpc(): void {
       // DO NOT promote/bump hitCount here — same reason as item:paste.
       // Only the watcher (genuine user Ctrl+C) should increment hitCount.
 
-      pushState.togglePanel()
+      // Pass false to explicitly close and avoid toggle race conditions.
+      pushState.togglePanel(false)
 
+      // Wait 50ms for layout updates, then simulate Ctrl+V
       setTimeout(() => {
         simulatePaste()
-      }, 200)
+      }, 50)
     } finally {
       setTimeout(() => {
         watcher.invalidateSignature()

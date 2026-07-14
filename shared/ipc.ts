@@ -73,11 +73,13 @@ export interface EventMap {
   /** Settings changed (e.g. from the tray menu). */
   'state:settings': [settings: Settings]
   /** Toggle the panel open/closed from the main process (e.g. tray). */
-  'window:toggle': []
+  'window:toggle': [open?: boolean]
   /** Open the panel directly to settings from the main process (e.g. tray). */
   'window:open-settings': []
   /** Fired when an OS drag initiated by the app has completed. */
   'item:drag-end': []
+  /** Tutorial step sync */
+  'tutorial:step': [step: number]
   /** Internal drop triggered by the main process when startDrag ends inside the window */
   'item:internal-drop': [pos: { x: number; y: number }]
   /**
@@ -106,6 +108,8 @@ export interface EventMap {
 export interface SendMap {
   /** Begin a native OS drag of an item (or one file of a bundle) out of the app. */
   'item:start-drag': { args: [req: DragRequest] }
+  /** Synchronize tutorial step */
+  'tutorial:set-step': { args: [step: number] }
 }
 
 /* ------------------------------------------------------------------ */

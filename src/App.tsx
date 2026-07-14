@@ -31,8 +31,8 @@ export default function App() {
     const offItems = edge.onItems((items) => setItems(items))
     const offSettings = edge.onSettings((next) => setSettings(next))
     const offToast = edge.onToast((t) => pushToast(t))
-    const offToggle = edge.onToggle(() => {
-      const next = !useStore.getState().open
+    const offToggle = edge.onToggle((forceOpen) => {
+      const next = forceOpen !== undefined ? forceOpen : !useStore.getState().open
       useStore.getState().setOpen(next)
       edge.setInteractive(next)
     })
@@ -41,12 +41,16 @@ export default function App() {
       useStore.getState().setSettingsOpen(true)
       edge.setInteractive(true)
     })
+    const offTutorialStep = edge.onTutorialStep((step) => {
+      useStore.getState().setTutorialStep(step)
+    })
     return () => {
       offItems()
       offSettings()
       offToast()
       offToggle()
       offOpenSettings()
+      offTutorialStep()
     }
   }, [hydrate, setItems, setSettings, pushToast])
 

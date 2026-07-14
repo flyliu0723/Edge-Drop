@@ -9,7 +9,7 @@
  *   - Persist the index to JSON and image bytes to per-item PNG files.
  *   - Convert internal items to the serializable DTO form for the renderer.
  */
-import { existsSync, readFileSync, writeFileSync, rmSync, statSync, readdirSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, rmSync, statSync, readdirSync } from 'node:fs'
 import { join, extname, basename as pathBasename } from 'node:path'
 import { nativeImage } from 'electron'
 import {
@@ -529,7 +529,6 @@ function buildFileEntry(p: string): FileEntry {
  * the main thread from blocking when the user copies large images.
  */
 const THUMB_SIZE = 240 // px — enough for the card UI, tiny IPC payload
-const THUMB_QUALITY = 80 // JPEG quality
 
 function fileToDataUrl(p: string): string {
   if (fileDataUrlCache.has(p)) return fileDataUrlCache.get(p)!

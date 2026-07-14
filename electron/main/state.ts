@@ -96,9 +96,9 @@ export const pushState = {
   settings(next: Settings): void {
     send('state:settings', next)
   },
-  togglePanel(): void {
-    console.log('[Main] Sending window:toggle event to renderer')
-    send('window:toggle')
+  togglePanel(open?: boolean): void {
+    console.log(`[Main] Sending window:toggle event to renderer with open=${open}`)
+    send('window:toggle', open)
   },
   openSettings(): void {
     console.log('[Main] Sending window:open-settings event to renderer')
