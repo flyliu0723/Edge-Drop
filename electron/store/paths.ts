@@ -22,6 +22,8 @@ export const PATHS = {
   settingsFile: () => join(root(), 'settings.json'),
   /** Scratch dir for temp files handed to native drag-out. */
   tempDir: () => join(root(), 'temp'),
+  /** Scratch dir for clipboard images staged for phone transfer. */
+  transferTempDir: () => join(root(), 'transfer-temp'),
   /** App icon (used by window + native drag image). */
   icon: () => join(app.getAppPath(), 'resources', 'icon.png'),
   /** Tray icon (pure white logo without background). */
@@ -30,7 +32,7 @@ export const PATHS = {
 
 /** Idempotently create every directory the app needs. Safe to call repeatedly. */
 export function ensureDirs(): void {
-  for (const dir of [PATHS.imagesDir(), PATHS.tempDir()]) {
+  for (const dir of [PATHS.imagesDir(), PATHS.tempDir(), PATHS.transferTempDir()]) {
     mkdirSync(dir, { recursive: true })
   }
 }
@@ -40,14 +42,20 @@ export function cleanTemp(): void {
   // Best-effort; failures are non-fatal.
   try {
     const fs = require('node:fs') as typeof import('node:fs')
-    for (const entry of fs.readdirSync(PATHS.tempDir())) {
+    for (const dir of [PATHS.tempDir(), PATHS.transferTempDir()]) {
       try {
-        fs.rmSync(join(PATHS.tempDir(), entry), { force: true })
+        for (const entry of fs.readdirSync(dir)) {
+          try {
+            fs.rmSync(join(dir, entry), { force: true })
+          } catch {
+            /* ignore individual file errors */
+          }
+        }
       } catch {
-        /* ignore individual file errors */
+        /* dir may not exist yet */
       }
     }
   } catch {
-    /* dir may not exist yet */
+    /* ignore */
   }
 }

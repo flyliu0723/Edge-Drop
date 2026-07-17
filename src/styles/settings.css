@@ -49,6 +49,19 @@
   line-height: 1.45;
 }
 
+.anchor-display-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.anchor-display-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #71717a;
+}
+
 .setting-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);

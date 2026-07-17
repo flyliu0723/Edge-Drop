@@ -85,6 +85,17 @@ export interface MergeResult {
   message?: string
 }
 
+/** Which vertical screen edge the panel anchors to (phase 1: left / right only). */
+export type AnchorEdge = 'left' | 'right'
+
+/** One selectable anchor position exposed to the settings UI. */
+export interface AnchorOption {
+  displayId: number
+  displayLabel: string
+  edge: AnchorEdge
+  edgeLabel: string
+}
+
 export interface Settings {
   /** Fraction of the screen height the hot zone occupies (0.2 - 0.6). */
   hotZoneHeight: number
@@ -108,6 +119,10 @@ export interface Settings {
   uiStyle: 'modern' | 'compact'
   /** Flag to track if the onboarding tutorial is completed. */
   tutorialCompleted: boolean
+  /** Electron Display.id the panel is anchored to. */
+  anchorDisplayId: number
+  /** Outer edge of `anchorDisplayId` where hover opens the panel. */
+  anchorEdge: AnchorEdge
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -121,7 +136,61 @@ export const DEFAULT_SETTINGS: Settings = {
   clearUnpinnedOnRestart: false,
   autoDeleteHours: 0,
   uiStyle: 'modern',
-  tutorialCompleted: false
+  tutorialCompleted: false,
+  anchorDisplayId: 0,
+  anchorEdge: 'left'
+}
+
+/* ------------------------------------------------------------------ */
+/* 局域网传到手机                                                      */
+/* ------------------------------------------------------------------ */
+
+/** 暂存箱内单项的内容。 */
+export type TransferPayload =
+  | { kind: 'text'; text: string; name?: string }
+  | { kind: 'file'; path: string; name: string; size: number }
+  | { kind: 'image'; path: string; name: string; size: number }
+
+export interface TransferItem {
+  id: string
+  payload: TransferPayload
+  addedAt: number
+}
+
+/** 一个可生成二维码的传输包（暂存箱条目）。 */
+export interface TransferBundle {
+  id: string
+  /** 内容变更时递增；二维码 token 绑定此版本，变更后旧码失效。 */
+  version: number
+  items: TransferItem[]
+  createdAt: number
+  label?: string
+}
+
+/** 传给 renderer 的包快照（与内部结构相同，预留扩展）。 */
+export type TransferBundleDto = TransferBundle
+
+/** 生成二维码的目标：单条剪贴板历史，或整个暂存箱包。 */
+export type TransferTarget =
+  | { kind: 'item'; id: string }
+  | { kind: 'bundle'; bundleId: string }
+
+export interface QrResult {
+  token: string
+  url: string
+  qrDataUrl: string
+  expiresAt: number
+  lanIp: string
+}
+
+/** Main → Renderer 的传输状态推送。 */
+export interface TransferStateDto {
+  bundles: TransferBundleDto[]
+  activeToken: string | null
+  lanIp: string | null
+  /** 本机可用的局域网 IPv4 列表（多网卡时可选）。 */
+  lanIps: string[]
+  port: number | null
 }
 
 

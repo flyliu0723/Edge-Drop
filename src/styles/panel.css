@@ -58,6 +58,33 @@
   display: block;
 }
 
+.blade-container.anchor-right::before,
+.root.anchor-right .blade-container::before {
+  left: auto;
+  right: -30px;
+}
+
+.root.anchor-right .blade {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top-left-radius: 24px;
+  border-bottom-left-radius: 24px;
+}
+
+.root.anchor-right .flare-top,
+.root.anchor-right .flare-bottom {
+  left: auto;
+  right: -30px;
+  background: linear-gradient(to left, #000000 30px, transparent 30px);
+  justify-content: flex-start;
+}
+
+/* Mirror the flare curves so they hug the right screen edge. */
+.root.anchor-right .flare-top svg,
+.root.anchor-right .flare-bottom svg {
+  transform: scaleX(-1);
+}
+
 /* Parent container solid block extension to prevent screen edge blur transparency */
 .blade-container::before {
   content: '';
@@ -143,9 +170,59 @@
   pointer-events: none;
 }
 
+/* Toolbar: search input + category filter pills, sits above the scroll area */
+.toolbar {
+  flex-shrink: 0;
+  padding: 2px var(--pad) 0;
+  position: relative;
+  z-index: 3;
+  background: #000000;
+}
+.toolbar .search {
+  margin: 0 0 6px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: 2px 0 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-pill {
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  background: var(--bg-2);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+.filter-pill:hover:not(.active) {
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
+.filter-pill.active {
+  color: #000;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Scroll area */
 .list {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;

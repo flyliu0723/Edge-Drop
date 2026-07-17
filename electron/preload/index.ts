@@ -55,6 +55,8 @@ function on<C extends EventChannel>(
  * to fail. Handling it here natively bypasses the bridge entirely.
  */
 let internalDrag = false
+/** When true, file drops go to the transfer staging tray instead of clipboard history. */
+let transferDropTarget = false
 
 const win: any = (globalThis as any).window || globalThis
 
@@ -69,25 +71,92 @@ win.addEventListener('drop', (e: any) => {
   }
 
   const files = e.dataTransfer?.files
-  if (!files || !files.length) return
+  if (files && files.length) {
+    const paths: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const p = webUtils.getPathForFile(files[i])
+        if (p) paths.push(p)
+      } catch {
+        /* ignore unreadable entries */
+      }
+    }
 
-  const paths: string[] = []
-  for (let i = 0; i < files.length; i++) {
-    try {
-      const p = webUtils.getPathForFile(files[i])
-      if (p) paths.push(p)
-    } catch {
-      /* ignore unreadable entries */
+    if (paths.length > 0) {
+      e.preventDefault()
+      if (transferDropTarget) {
+        invoke('transfer:stage-file', paths).catch(console.error)
+      } else {
+        invoke('item:add-files', paths).catch(console.error)
+      }
+      return
     }
   }
 
-  if (paths.length > 0) {
-    // Fire and forget to the main process.
-    // The main process will broadcast the new state back to React.
-    e.preventDefault()
-    invoke('item:add-files', paths).catch(console.error)
+  // No file paths (e.g. a text selection or an image dragged from a browser).
+  // Detect an image URL first (from the HTML <img src> or a uri-list), otherwise
+  // fall back to capturing the text payload so dropped text is saved like a copy.
+  const dt = e.dataTransfer
+  if (dt) {
+    const html = typeof dt.getData === 'function' ? dt.getData('text/html') : ''
+    const text = typeof dt.getData === 'function' ? dt.getData('text/plain') : ''
+    const uriList = typeof dt.getData === 'function' ? dt.getData('text/uri-list') : ''
+
+    const imageUrl = pickImageUrl(html, uriList, text)
+    if (imageUrl) {
+      e.preventDefault()
+      invoke('item:add-image-url', imageUrl).catch(console.error)
+      return
+    }
+
+    if (text && text.trim()) {
+      e.preventDefault()
+      invoke('item:add-text', text, html || undefined).catch(console.error)
+    }
   }
 }, true)
+
+const IMG_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg|avif|ico|tiff?|jfif|pjpeg|pjp)(?:[?#]|$)/i
+
+function isImageUrl(u: string): boolean {
+  return /^data:image\//i.test(u) || IMG_EXT_RE.test(u)
+}
+
+/** Normalize a src that came from an <img> tag into a fetchable absolute URL. */
+function absolutifyImgSrc(src: string): string | null {
+  const s = src.trim()
+  if (!s) return null
+  if (/^data:/i.test(s)) return s
+  if (/^https?:\/\//i.test(s)) return s
+  if (/^\/\//.test(s)) return 'https:' + s
+  // relative paths can't be resolved without the page base URL — skip them
+  return null
+}
+
+/** Extract the best image URL candidate from a browser drag payload, if any. */
+function pickImageUrl(html: string, uriList: string, text: string): string | null {
+  // The strongest signal: an <img> tag in the HTML payload. If present, trust
+  // it's an image regardless of the URL extension (CDN/dynamic URLs often have
+  // no .png/.jpg suffix), since the source is literally an <img> element.
+  if (html) {
+    const m = html.match(/<img[^>]*\bsrc=["']([^"']+)["']/i)
+    if (m && m[1]) {
+      const abs = absolutifyImgSrc(m[1].replace(/&amp;/gi, '&'))
+      if (abs) return abs
+    }
+  }
+  // Without an <img> tag, only treat uri-list / plain-text as an image when the
+  // URL clearly looks like one (so dragging a normal hyperlink stays text).
+  if (uriList) {
+    const first = uriList.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)[0]
+    if (first && isImageUrl(first)) return first
+  }
+  if (text) {
+    const t = text.trim()
+    if (isImageUrl(t) && /^(https?:|data:)/i.test(t)) return t
+  }
+  return null
+}
 
 const api = {
   /* Renderer -> Main */
@@ -100,8 +169,11 @@ const api = {
   pasteItem: (id: string) => invoke('item:paste', id),
   pasteSubitem: (req: import('../../shared/types').DragRequest) => invoke('item:paste-subitem', req),
   checkUpdate: () => invoke('app:check-update'),
+  listAnchorOptions: () => invoke('displays:list-anchors'),
   startDrag: (req: DragRequest) => send('item:start-drag', req),
   addFiles: (paths: string[]) => invoke('item:add-files', paths),
+  addText: (text: string, html?: string) => invoke('item:add-text', text, html),
+  addImageUrl: (url: string) => invoke('item:add-image-url', url),
   removeSubitem: (req: import('../../shared/types').DragRequest) => invoke('item:remove-subitem', req),
   mergeItems: (sourceId: string, targetId: string) => invoke('item:merge', sourceId, targetId),
   splitItem: (req: import('../../shared/types').DragRequest) => invoke('item:split', req),
@@ -110,7 +182,22 @@ const api = {
   setInteractive: (value: boolean) => invoke('window:set-interactive', value),
   minimizeWindow: () => invoke('window:minimize'),
   setInternalDrag: (active: boolean) => { internalDrag = active },
+  setTransferDropTarget: (active: boolean) => { transferDropTarget = active },
   broadcastTutorialStep: (step: number) => send('tutorial:set-step', step),
+
+  /* 局域网传到手机 */
+  transferList: () => invoke('transfer:list'),
+  transferStageFile: (paths: string[]) => invoke('transfer:stage-file', paths),
+  transferStageItem: (itemId: string) => invoke('transfer:stage-item', itemId),
+  transferStageClipboard: () => invoke('transfer:stage-clipboard'),
+  transferRemoveItem: (bundleId: string, itemId: string) =>
+    invoke('transfer:remove-item', bundleId, itemId),
+  transferRemoveBundle: (bundleId: string) => invoke('transfer:remove-bundle', bundleId),
+  transferGenerateQr: (target: import('../../shared/types').TransferTarget) =>
+    invoke('transfer:generate-qr', target),
+  transferRevokeQr: (token: string) => invoke('transfer:revoke-qr', token),
+  transferPickFiles: () => invoke('transfer:pick-files'),
+  transferSetLanIp: (ip: string | null) => invoke('transfer:set-lan-ip', ip),
 
   /* Main -> Renderer */
   onItems: (cb: (items: EventArgs<'state:items'>[0]) => void) => on('state:items', cb),
@@ -122,6 +209,7 @@ const api = {
   onCursorEdge: (cb: (data: { x: number; y: number; inEdge: boolean; inZone: boolean }) => void) => on('window:cursor-edge', cb),
   onToast: (cb: (toast: { id: string; message: string; tone: 'info' | 'error' }) => void) => on('ui:toast', cb),
   onTutorialStep: (cb: (step: number) => void) => on('tutorial:step', cb),
+  onTransferState: (cb: (state: EventArgs<'transfer:state'>[0]) => void) => on('transfer:state', cb),
 
   /* Drag helpers */
   // (Handled natively by capturing drop event above)

@@ -6,6 +6,7 @@
  */
 import { useMemo } from 'react'
 import { useStore } from '../store/appStore'
+import type { KindFilter } from '../store/appStore'
 import type { ClipboardItemDto } from '../../shared/types'
 import { basename } from '../lib/format'
 
@@ -26,6 +27,14 @@ function matches(it: ClipboardItemDto, q: string): boolean {
   }
 }
 
+/** True if the item belongs to the selected category. `image` covers both single images and collections. */
+function matchesKind(it: ClipboardItemDto, k: KindFilter): boolean {
+  if (k === 'all') return true
+  if (k === 'text') return it.data.kind === 'text'
+  if (k === 'image') return it.data.kind === 'image' || it.data.kind === 'image-collection'
+  return it.data.kind === 'files'
+}
+
 export interface GroupedItems {
   pinned: ClipboardItemDto[]
   recent: ClipboardItemDto[]
@@ -34,6 +43,7 @@ export interface GroupedItems {
 export function useFilteredItems(): GroupedItems {
   const items = useStore((s) => s.items)
   const query = useStore((s) => s.query)
+  const kindFilter = useStore((s) => s.kindFilter)
   const tutorialStep = useStore((s) => s.tutorialStep)
 
   return useMemo(() => {
@@ -59,9 +69,10 @@ export function useFilteredItems(): GroupedItems {
     })
 
     for (const it of filteredByTutorial) {
+      if (!matchesKind(it, kindFilter)) continue
       if (!matches(it, query.trim())) continue
       ;(it.pinned ? pinned : recent).push(it)
     }
     return { pinned, recent }
-  }, [items, query, tutorialStep])
+  }, [items, query, kindFilter, tutorialStep])
 }

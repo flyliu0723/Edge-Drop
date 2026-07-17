@@ -13,9 +13,13 @@ import { useStore } from '../store/appStore'
 import { PANEL_LEAVE_EVENT, PANEL_ENTER_EVENT } from '../hooks/useEdgeHover'
 import { Header } from './Header'
 import { ItemList } from './ItemList'
+import { SearchBar } from './SearchBar'
+import { FilterBar } from './FilterBar'
 import { Settings } from './Settings'
 import { ToastStack } from './Toast'
 import { TrashIcon } from './icons'
+import { TransferTray } from './TransferTray'
+import { QrModal } from './QrModal'
 
 export function Panel() {
   const open = useStore((s) => s.open)
@@ -25,15 +29,23 @@ export function Panel() {
   const settingsOpen = useStore((s) => s.settingsOpen)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
   const setQuery = useStore((s) => s.setQuery)
+  const activeQr = useStore((s) => s.activeQr)
+  const setTransferTrayOpen = useStore((s) => s.setTransferTrayOpen)
 
   useEffect(() => {
     if (!open) {
       setSettingsOpen(false)
+      setTransferTrayOpen(false)
       setQuery('')
+      // 收起面板时作废当前二维码链接
+      void useStore.getState().dismissQr()
     }
-  }, [open, setSettingsOpen, setQuery])
+  }, [open, setSettingsOpen, setQuery, setTransferTrayOpen])
 
   const topOffset = '50%'
+  const anchorEdge = settings.anchorEdge || 'left'
+  const isRightAnchor = anchorEdge === 'right'
+  const hotZoneWidth = settings.hotZoneWidth || 3
 
   // The actual pixel height of the trigger zone on the left edge
   const triggerHeightPx = window.innerHeight * settings.hotZoneHeight
@@ -159,7 +171,7 @@ export function Panel() {
   }
 
   return (
-    <div className="root">
+    <div className={`root${isRightAnchor ? ' anchor-right' : ''}`}>
       <motion.div
         className="blade-container"
         initial={false}
@@ -171,18 +183,23 @@ export function Panel() {
           top: topOffset,
           y: '-50%',
           position: 'absolute',
-          left: 0,
+          left: isRightAnchor ? 'auto' : 0,
+          right: isRightAnchor ? 0 : 'auto',
           zIndex: 10,
           pointerEvents: open ? 'auto' : 'none',
-          originX: 0,
+          originX: isRightAnchor ? 1 : 0,
           originY: 0.5
         }}
         animate={{
           clipPath: open
-            ? 'inset(calc(0% - 100px) calc(0% - 100px) calc(0% - 100px) 0px round 0px 24px 24px 0px)'
-            : `inset(calc(50% - ${halfTrigger}px) calc(100% - ${settings.hotZoneWidth || 3}px) calc(50% - ${halfTrigger}px) 0px round 0px 24px 24px 0px)`,
+            ? isRightAnchor
+              ? 'inset(calc(0% - 100px) 0px calc(0% - 100px) calc(0% - 100px) round 24px 0px 0px 24px)'
+              : 'inset(calc(0% - 100px) calc(0% - 100px) calc(0% - 100px) 0px round 0px 24px 24px 0px)'
+            : isRightAnchor
+              ? `inset(calc(50% - ${halfTrigger}px) 0px calc(50% - ${halfTrigger}px) calc(100% - ${hotZoneWidth}px) round 24px 0px 0px 24px)`
+              : `inset(calc(50% - ${halfTrigger}px) calc(100% - ${hotZoneWidth}px) calc(50% - ${halfTrigger}px) 0px round 0px 24px 24px 0px)`,
           scale: open ? [0.92, 1.05, 0.98, 1] : 1,
-          filter: open ? 'blur(0px)' : 'blur(16px)'
+          filter: open ? 'none' : 'blur(16px)'
         }}
         transition={{
           scale: {
@@ -212,7 +229,7 @@ export function Panel() {
         </div>
         <div
           ref={bladeRef}
-          className="blade"
+          className={`blade${isRightAnchor ? ' anchor-right' : ''}`}
           style={{ height: panelHeightStr }}
         >
           <Header />
@@ -243,22 +260,26 @@ export function Panel() {
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, #000000, transparent)', pointerEvents: 'none', zIndex: 10 }} />
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 18, background: 'linear-gradient(to bottom, #000000, transparent)', pointerEvents: 'none', zIndex: 10 }} />
+                <div className="toolbar">
+                  <SearchBar />
+                  <FilterBar />
+                </div>
                 <ItemList />
                 <div className="footer" style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', top: -18, left: 0, right: 0, height: 18, background: 'linear-gradient(to top, #000000, transparent)', pointerEvents: 'none', zIndex: 10 }} />
                   <span className="count">
-                    {total} item{total === 1 ? '' : 's'}
+                    共 {total} 项
                   </span>
                   <div className="spacer" />
                   <button 
                     className="text-btn danger"
                     onClick={clear} 
                     disabled={total === 0} 
-                    title="Clear shelf" 
+                    title="清空剪贴板" 
                     style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                   >
                     <TrashIcon width={14} height={14} />
-                    <span>Clear</span>
+                    <span>清空</span>
                   </button>
                 </div>
               </motion.div>
@@ -266,6 +287,8 @@ export function Panel() {
           </AnimatePresence>
           <DropOverlay />
           <SplitDropZone />
+          <TransferTray />
+          <QrModal qr={activeQr} />
         </div>
       </motion.div>
     </div>
@@ -276,15 +299,15 @@ export function Panel() {
 function getTutorialText(step: number): string {
   switch (step) {
     case 1:
-      return 'Click the trash icon on the pinned card below to delete it.'
+      return '点击下方已固定卡片上的删除图标将其移除。'
     case 2:
-      return 'Copy any text or image (Ctrl + C) from another application to capture it.'
+      return '在其他应用中复制任意文本或图片（Ctrl + C）即可捕获。'
     case 3:
-      return 'Drag the image card below and drop it onto your desktop.'
+      return '将下方的图片卡片拖到桌面上。'
     case 4:
-      return 'Click the files card below to expand the stack and view its contents.'
+      return '点击下方的文件卡片展开堆叠并查看内容。'
     case 5:
-      return 'Click the Clear button at the bottom of the panel to finish.'
+      return '点击面板底部的清空按钮完成教程。'
     default:
       return ''
   }
@@ -341,10 +364,10 @@ function DropOverlay() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)', letterSpacing: '0.01em' }}>
-              Drop to save
+              拖放以保存
             </div>
             <div style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255, 255, 255, 0.5)', lineHeight: 1.4 }}>
-              Any file, image, link, or text
+              支持文件、图片、链接或文本
             </div>
           </div>
         </motion.div>
@@ -355,6 +378,8 @@ function DropOverlay() {
 
 function SplitDropZone() {
   const internalDragReq = useStore((s) => s.internalDragReq)
+  const anchorEdge = useStore((s) => s.settings.anchorEdge) || 'left'
+  const isRight = anchorEdge === 'right'
   const isSubitemDragging = !!(
     internalDragReq &&
     (internalDragReq.imageId || (internalDragReq.paths && internalDragReq.paths.length > 0))
@@ -375,13 +400,13 @@ function SplitDropZone() {
     <AnimatePresence>
       {isSubitemDragging && (
         <motion.div
-          className={`split-dropzone${isOver ? ' active' : ''}`}
+          className={`split-dropzone${isOver ? ' active' : ''}${isRight ? ' split-dropzone-right' : ''}`}
           onDragOver={(e) => e.preventDefault()}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
-          initial={{ opacity: 0, x: -15 }}
+          initial={{ opacity: 0, x: isRight ? 15 : -15 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -15 }}
+          exit={{ opacity: 0, x: isRight ? 15 : -15 }}
           transition={{ type: 'spring', stiffness: 350, damping: 25 }}
           style={{ y: '-50%' }}
         >

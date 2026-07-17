@@ -19,6 +19,7 @@ import { ChevronUpIcon, ChevronDownIcon } from './icons'
 export function ItemList() {
   const { pinned, recent } = useFilteredItems()
   const query = useStore((s) => s.query)
+  const kindFilter = useStore((s) => s.kindFilter)
   const listRef = useRef<HTMLDivElement>(null)
 
   const total = pinned.length + recent.length
@@ -185,7 +186,7 @@ export function ItemList() {
       onScroll={handleScroll}
     >
       {total === 0 ? (
-        <EmptyState filtered={query.trim().length > 0} />
+        <EmptyState filtered={query.trim().length > 0 || kindFilter !== 'all'} />
       ) : (
         <>
           {pinned.length > 0 && (
@@ -193,14 +194,14 @@ export function ItemList() {
               <div 
                 className={`section-label pinned-header-interactive ${pinnedCollapsed ? 'is-collapsed' : ''}`}
                 onClick={() => setPinnedCollapsed(!pinnedCollapsed)}
-                title={pinnedCollapsed ? "Click to expand pinned items" : "Click to compress pinned items"}
+                title={pinnedCollapsed ? '点击展开已固定项' : '点击收起已固定项'}
               >
                 <div className="pinned-header-left">
-                  <span>Pinned</span>
+                  <span>已固定</span>
                   <span className="pinned-count-badge">{pinned.length}</span>
                 </div>
                 <div className="pinned-header-right">
-                  <span className="pinned-toggle-hint">{pinnedCollapsed ? 'Expand' : 'Compress'}</span>
+                  <span className="pinned-toggle-hint">{pinnedCollapsed ? '展开' : '收起'}</span>
                   <button className="act bundle-collapse-btn">
                     {pinnedCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
                   </button>
@@ -216,7 +217,7 @@ export function ItemList() {
 
           {recent.length > 0 && (
             <section>
-              {pinned.length > 0 && <div className="section-label">Recent</div>}
+              {pinned.length > 0 && <div className="section-label">最近</div>}
               <AnimatePresence initial={false}>
                 {recent.map((it) => (
                   <ClipboardItemCard key={it.id} item={it} />
@@ -235,7 +236,7 @@ export function ItemList() {
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             className="scroll-top-btn"
             onClick={scrollToTop}
-            title="Scroll to top"
+            title="回到顶部"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="18 15 12 9 6 15"></polyline>

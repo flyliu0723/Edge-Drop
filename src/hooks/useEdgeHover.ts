@@ -1,44 +1,65 @@
 /**
  * useEdgeHover — the heart of the "invisible until you approach the edge" feel.
  *
- * Detection strategy:
- *
- *  OPENING: cursor dwells in the leftmost TRIGGER_PX band within the hot zone.
- *
- *  CLOSING — two complementary mechanisms:
- *
- *  1. panel:leave custom event (primary): Panel.tsx dispatches this event on the
- *     blade div's onMouseLeave. React's mouseleave does NOT bubble through child
- *     elements, so it fires exactly when the cursor leaves the visible black area.
- *     This correctly handles all directions (right, top, bottom) without relying
- *     on Electron's broken document-level pointerleave for transparent windows.
- *
- *  2. Y-axis overshooting (backup): while the cursor is inside the window, we
- *     track whether it has gone above or below the panel's visual bounds via
- *     pointermove. This catches cases where the cursor leaves the panel vertically
- *     before React's mouseleave has a chance to fire.
- *
- *  Drag-awareness: while an external OS file drag is active we never close.
+ * Supports left- and right-anchored panels (phase 1 multi-monitor).
  */
 import { useEffect, useRef } from 'react'
 import { edge } from '../lib/edge'
 import { useStore } from '../store/appStore'
+import type { AnchorEdge } from '../../shared/types'
 
-const TRIGGER_PX = 3    // leftmost px that count as "the edge"
-const DWELL_MS = 120     // cursor must linger this long to open
-const GRACE_MS = 250     // close delay after leaving
-const PANEL_WIDE = 270   // blade is 270px (var(--panel-width))
-/** Hysteresis thresholds for closing the panel.
- * KEEP_OPEN_PX: if cursor x is <= this, the panel stays open (clearly inside blade).
- * START_CLOSE_PX: if cursor x is > this, start the close timer (clearly outside).
- * Gap between the two prevents rapid cancel/schedule oscillation at the blade edge
- * when the cursor hovers just outside the visual boundary.
- */
-const KEEP_OPEN_PX = PANEL_WIDE - 15  // 255 — clearly inside blade
-const START_CLOSE_PX = PANEL_WIDE + 20 // 290 — 20px buffer outside the visual boundary
+const TRIGGER_PX = 3
+const DWELL_MS = 120
+const GRACE_MS = 250
+const PANEL_WIDE = 270
+const KEEP_INSET = 15
+const CLOSE_OUTSET = 20
 
 export const PANEL_LEAVE_EVENT = 'panel:leave'
 export const PANEL_ENTER_EVENT = 'panel:enter'
+
+/** True when the in-progress drag carries something we can capture (files or text). */
+function hasDragPayload(e: DragEvent): boolean {
+  const types = e.dataTransfer?.types
+  if (!types) return false
+  for (const t of types) {
+    if (t === 'Files' || t === 'text/plain' || t === 'text/html' || t === 'text/uri-list') return true
+  }
+  return false
+}
+
+function triggerPx(hotZoneWidth: number): number {
+  return Math.max(TRIGGER_PX, hotZoneWidth)
+}
+
+function isAtHotEdge(x: number, windowWidth: number, edgeSide: AnchorEdge, hotZoneWidth: number): boolean {
+  const trigger = triggerPx(hotZoneWidth)
+  if (edgeSide === 'right') {
+    return x >= windowWidth - trigger
+  }
+  return x <= trigger
+}
+
+function isInsideBladeX(x: number, windowWidth: number, edgeSide: AnchorEdge): boolean {
+  if (edgeSide === 'right') {
+    return x >= windowWidth - PANEL_WIDE && x <= windowWidth
+  }
+  return x >= 0 && x <= PANEL_WIDE
+}
+
+function shouldKeepOpen(x: number, windowWidth: number, edgeSide: AnchorEdge): boolean {
+  if (edgeSide === 'right') {
+    return x >= windowWidth - PANEL_WIDE + KEEP_INSET
+  }
+  return x <= PANEL_WIDE - KEEP_INSET
+}
+
+function shouldStartClose(x: number, windowWidth: number, edgeSide: AnchorEdge): boolean {
+  if (edgeSide === 'right') {
+    return x < windowWidth - PANEL_WIDE - CLOSE_OUTSET
+  }
+  return x > PANEL_WIDE + CLOSE_OUTSET
+}
 
 export function useEdgeHover(): void {
   const open = useStore((s) => s.open)
@@ -48,8 +69,6 @@ export function useEdgeHover(): void {
   const setDragActive = useStore((s) => s.setDragActive)
   const internalDragReq = useStore((s) => s.internalDragReq)
 
-  // All reactive values accessed inside events kept in refs so the
-  // event-listener effect never needs to restart (restarting cancels timers).
   const openRef = useRef(open)
   openRef.current = open
 
@@ -62,17 +81,8 @@ export function useEdgeHover(): void {
   const settingsRef = useRef(settings)
   settingsRef.current = settings
 
-  // Throttle the self-healing setInteractive(true) call.
-  // Without this, it fires at 60Hz (every 16ms) via the cursor-edge poll,
-  // flooding the IPC queue and starving the messages that open the panel.
   const lastSetInteractiveRef = useRef(0)
-
-  // Hot zone and panel bounds, recomputed on resize to avoid reading DOM at 1000Hz
   const zone = useRef({ top: 0, bottom: 0, midY: 0, panelHalfH: 0 })
-
-  // Last known pointer position (updated on every pointermove). Used to vet
-  // `panel:leave` events — Framer Motion layout reflows can fire spurious
-  // mouseleave events while the cursor never actually left the blade.
   const lastClient = useRef({ x: -1, y: -1 })
 
   useEffect(() => {
@@ -81,8 +91,8 @@ export function useEdgeHover(): void {
       const s = settingsRef.current
       const half = h * s.hotZoneHeight / 2
       const panelHalfH = h * (s.panelHeight || 0.5) / 2
-      zone.current = { 
-        top: h / 2 - half, 
+      zone.current = {
+        top: h / 2 - half,
         bottom: h / 2 + half,
         midY: h / 2,
         panelHalfH
@@ -91,9 +101,8 @@ export function useEdgeHover(): void {
     recompute()
     window.addEventListener('resize', recompute)
     return () => window.removeEventListener('resize', recompute)
-  }, [settings.hotZoneHeight, settings.panelHeight])
+  }, [settings.hotZoneHeight, settings.panelHeight, settings.anchorEdge])
 
-  // Single stable effect — deps never change after mount.
   useEffect(() => {
     let dwellTimer: number | undefined
     let graceTimer: number | undefined
@@ -114,7 +123,7 @@ export function useEdgeHover(): void {
 
     const scheduleClose = (delay = GRACE_MS) => {
       if (dragActiveRef.current && !internalDragRef.current) return
-      if (graceTimer !== undefined) return // already closing
+      if (graceTimer !== undefined) return
       graceTimer = window.setTimeout(closePanel, delay)
     }
 
@@ -144,16 +153,13 @@ export function useEdgeHover(): void {
       setOpen(true)
     }
 
-    // ── panel:leave / panel:enter (from Panel.tsx blade div) ──────────────
-    // NOTE: `mouseleave` can fire spuriously when Framer Motion's `layout`
-    // reflow repositions an exiting child out from under the cursor (e.g. on
-    // expand). So we treat `panel:leave` as a *hint* and only actually close
-    // if the last known pointer position is genuinely outside the blade.
     const isInsideBlade = () => {
       const { midY, panelHalfH } = zone.current
       const { x, y } = lastClient.current
-      if (x < 0) return true // unknown — be conservative, don't close
-      return x <= PANEL_WIDE && y >= midY - panelHalfH && y <= midY + panelHalfH
+      const edgeSide = settingsRef.current.anchorEdge || 'left'
+      const windowWidth = window.innerWidth
+      if (x < 0) return true
+      return isInsideBladeX(x, windowWidth, edgeSide) && y >= midY - panelHalfH && y <= midY + panelHalfH
     }
 
     const onPanelLeave = () => {
@@ -168,19 +174,15 @@ export function useEdgeHover(): void {
       cancelClose()
     }
 
-    // ── main-process cursor poll (replaces broken pointermove forwarding) ──
-    // The main process polls screen.getCursorScreenPoint() every 16ms and
-    // sends window:cursor-edge with raw x/y coords. We check the hot zone
-    // here with the renderer's own settings so everything stays in sync.
     const unsubCursorEdge = window.edge.onCursorEdge((data) => {
       lastClient.current = { x: data.x, y: data.y }
       const { top, bottom, midY, panelHalfH } = zone.current
-      const inEdge = data.x <= TRIGGER_PX
+      const s = settingsRef.current
+      const edgeSide = s.anchorEdge || 'left'
+      const windowWidth = window.innerWidth
+      const inEdge = isAtHotEdge(data.x, windowWidth, edgeSide, s.hotZoneWidth)
       const inZone = data.y >= top && data.y <= bottom
 
-      // Edge trigger: only start dwell to OPEN when panel is closed.
-      // When panel is already open, cursor at x=0 is treated like any other
-      // inside-blade position (falls through to insideX check below).
       if (inEdge && inZone && !openRef.current) {
         cancelClose()
         if (dwellTimer === undefined) {
@@ -199,51 +201,37 @@ export function useEdgeHover(): void {
 
       if (!openRef.current) return
 
-      // Self-healing safety: if panel is open, enforce interactivity so it can never be stuck click-through!
-      // Throttled to fire at most once every 2 seconds to prevent flooding the IPC queue.
       const now = Date.now()
       if (now - lastSetInteractiveRef.current > 2000) {
         lastSetInteractiveRef.current = now
         edge.setInteractive(true)
       }
 
-      // Hysteresis-based close detection.
-      // Using two separate thresholds prevents the oscillation that occurs when
-      // the cursor hovers right at the blade edge (x ≈ 280px): a single threshold
-      // causes rapid cancel/schedule cycles every 16ms that prevent the grace
-      // timer from ever counting down.
-      //
-      //  x ≤ KEEP_OPEN_PX (250): cursor clearly inside blade → cancel close
-      //  x > START_CLOSE_PX (340): cursor clearly outside window → schedule close
-      //  250 < x ≤ 340 (dead band): neither action — let existing timer run
       const insideY = data.y >= midY - panelHalfH && data.y <= midY + panelHalfH
 
-      if (data.x <= KEEP_OPEN_PX && insideY) {
+      if (shouldKeepOpen(data.x, windowWidth, edgeSide) && insideY) {
         cancelClose()
         return
       }
 
-      if (data.x > START_CLOSE_PX || !insideY) {
+      if (shouldStartClose(data.x, windowWidth, edgeSide) || !insideY) {
         scheduleClose()
       }
-      // else: dead band — do nothing, let existing timer expire naturally
     })
 
-    // ── keyboard ───────────────────────────────────────────────────────────
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && openRef.current) scheduleClose(0)
     }
 
-    // ── OS file drag awareness ─────────────────────────────────────────────
     const onDocDragEnter = (e: DragEvent) => {
-      if (e.dataTransfer?.types.includes('Files')) {
+      if (hasDragPayload(e)) {
         e.preventDefault()
         setDragActive(true)
         openPanel()
       }
     }
     const onDocDragOver = (e: DragEvent) => {
-      if (e.dataTransfer?.types.includes('Files')) {
+      if (hasDragPayload(e)) {
         e.preventDefault()
         cancelClose()
       }
@@ -263,7 +251,6 @@ export function useEdgeHover(): void {
       setDragActive(false)
     }
 
-    // ── register ───────────────────────────────────────────────────────────
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener(PANEL_LEAVE_EVENT, onPanelLeave)
     window.addEventListener(PANEL_ENTER_EVENT, onPanelEnter)

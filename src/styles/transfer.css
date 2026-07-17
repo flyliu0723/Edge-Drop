@@ -1,0 +1,329 @@
+/* 局域网传到手机 — 暂存箱浮层与二维码弹层 */
+
+.transfer-tray {
+  position: absolute;
+  inset: 48px 10px 10px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: rgba(12, 12, 14, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(24px);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.transfer-tray-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+  flex-shrink: 0;
+}
+
+.transfer-tray-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.transfer-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.transfer-lan {
+  padding: 0 14px 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.transfer-lan-warn {
+  color: #fbbf24;
+}
+
+.transfer-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 12px;
+  flex-shrink: 0;
+}
+
+.transfer-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.transfer-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.transfer-action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.transfer-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 10px 8px;
+  min-height: 0;
+}
+
+.transfer-empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.transfer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.transfer-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.transfer-row-name {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transfer-row-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transfer-footer {
+  padding: 10px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.transfer-primary-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #ffffff;
+  color: #000;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.transfer-primary-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.transfer-clear-btn {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.transfer-clear-btn:hover {
+  color: #ff6b6b;
+}
+
+/* ---- QR modal ---- */
+
+.qr-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(16px);
+  pointer-events: auto;
+}
+
+.qr-card {
+  width: 100%;
+  max-width: 260px;
+  background: #111114;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.qr-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.qr-image {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.qr-meta {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+}
+
+.qr-url {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  word-break: break-all;
+}
+
+.qr-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(255, 200, 120, 0.7);
+}
+
+.qr-revoke-btn {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.qr-copy-btn {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #ffffff;
+  color: #000;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.qr-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.qr-revoke-btn:hover {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff8a8a;
+}
+
+.header-transfer-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  border: 1.5px solid #000;
+  pointer-events: none;
+}
+
+.header-transfer-dot.staged {
+  background: #fbbf24;
+}
+
+.header-transfer-dot.sharing {
+  background: #34d399;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
+}
+
+.transfer-ip-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+
+.transfer-ip-pill {
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.transfer-ip-pill.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.transfer-drop-hint {
+  margin: 0 12px 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.4;
+}

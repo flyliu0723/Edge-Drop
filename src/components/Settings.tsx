@@ -1,11 +1,64 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/appStore'
+import type { AnchorOption } from '../../shared/types'
 import '../styles/settings.css'
+
+function AnchorPositionSettings() {
+  const settings = useStore((s) => s.settings)
+  const patch = useStore((s) => s.patchSettings)
+  const [options, setOptions] = useState<AnchorOption[]>([])
+
+  useEffect(() => {
+    window.edge.listAnchorOptions().then(setOptions).catch(() => setOptions([]))
+  }, [])
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, AnchorOption[]>()
+    for (const opt of options) {
+      const list = map.get(opt.displayLabel) ?? []
+      list.push(opt)
+      map.set(opt.displayLabel, list)
+    }
+    return [...map.entries()]
+  }, [options])
+
+  const isActive = (opt: AnchorOption) =>
+    settings.anchorDisplayId === opt.displayId && settings.anchorEdge === opt.edge
+
+  return (
+    <div className="setting-row vertical">
+      <div className="setting-info">
+        <div className="setting-title">显示位置</div>
+        <div className="setting-desc">选择面板贴靠的显示器与外边缘（已自动排除屏幕接缝）</div>
+      </div>
+      {grouped.length === 0 ? (
+        <div className="setting-desc">正在加载显示器信息…</div>
+      ) : (
+        grouped.map(([label, edges]) => (
+          <div key={label} className="anchor-display-group">
+            <div className="anchor-display-label">{label}</div>
+            <div className="setting-pills">
+              {edges.map((opt) => (
+                <button
+                  key={`${opt.displayId}-${opt.edge}`}
+                  className={`pill${isActive(opt) ? ' active' : ''}`}
+                  onClick={() => patch({ anchorDisplayId: opt.displayId, anchorEdge: opt.edge })}
+                >
+                  {opt.edgeLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
 
 export function Settings() {
   const settings = useStore((s) => s.settings)
   const patch = useStore((s) => s.patchSettings)
   const updateInfo = useStore((s) => s.updateInfo)
-  const currentVersion = useStore((s) => s.currentVersion)
 
   return (
     <div className="settings-list">
@@ -13,24 +66,39 @@ export function Settings() {
         <>
           <div className="update-prompt">
             <div className="update-text">
-              There is a new version available for this application and you can download it.
+              有新版本可用，点击下载更新。
             </div>
             <button
               className="update-btn"
               onClick={() => window.open(updateInfo.downloadUrl, '_blank')}
             >
-              Download {updateInfo.latestVersion}
+              下载 {updateInfo.latestVersion}
             </button>
           </div>
           <div className="setting-divider" />
         </>
       )}
 
+      <AnchorPositionSettings />
+
+      <div className="setting-divider" />
+
+      <div className="setting-row vertical">
+        <div className="setting-info">
+          <div className="setting-title">传到手机</div>
+          <div className="setting-desc">
+            卡片「⋯」可发送到手机或加入暂存箱；Header 手机图标打开暂存箱。手机与电脑需同一 Wi-Fi，扫码即可下载（二维码约 30 分钟有效）。多网卡时可在暂存箱内切换局域网 IP。
+          </div>
+        </div>
+      </div>
+
+      <div className="setting-divider" />
+
       {/* Clear unpinned on restart */}
       <div className="setting-row">
         <div className="setting-info">
-          <div className="setting-title">Clear unpinned on restart</div>
-          <div className="setting-desc">Wipe unpinned items whenever device restarts</div>
+          <div className="setting-title">重启时清除未固定项</div>
+          <div className="setting-desc">每次设备重启时清除未固定的剪贴板项</div>
         </div>
         <Toggle
           checked={settings.clearUnpinnedOnRestart}
@@ -43,16 +111,16 @@ export function Settings() {
       {/* Auto-delete timer */}
       <div className="setting-row vertical">
         <div className="setting-info">
-          <div className="setting-title">Auto-delete timer</div>
-          <div className="setting-desc">Automatically purge copied items (preserves Pinned)</div>
+          <div className="setting-title">自动删除计时</div>
+          <div className="setting-desc">自动清除已复制项（已固定项保留）</div>
         </div>
         <div className="setting-pills">
           {[
-            { label: 'Never', val: 0 },
-            { label: '1h', val: 1 },
-            { label: '6h', val: 6 },
-            { label: '24h', val: 24 },
-            { label: '7d', val: 168 }
+            { label: '永不', val: 0 },
+            { label: '1 小时', val: 1 },
+            { label: '6 小时', val: 6 },
+            { label: '24 小时', val: 24 },
+            { label: '7 天', val: 168 }
           ].map((opt) => (
             <button
               key={opt.val}
@@ -70,8 +138,8 @@ export function Settings() {
       {/* History capacity */}
       <div className="setting-row vertical">
         <div className="setting-info">
-          <div className="setting-title">History capacity</div>
-          <div className="setting-desc">Maximum unpinned items stored in history</div>
+          <div className="setting-title">历史容量</div>
+          <div className="setting-desc">最多保存的未固定历史项数量</div>
         </div>
         <div className="setting-pills">
           {[
@@ -96,14 +164,14 @@ export function Settings() {
       {/* Edge trigger height */}
       <div className="setting-row vertical">
         <div className="setting-info">
-          <div className="setting-title">Edge trigger height</div>
-          <div className="setting-desc">Hover area size on screen edge</div>
+          <div className="setting-title">边缘触发高度</div>
+          <div className="setting-desc">屏幕边缘悬停区域大小</div>
         </div>
         <div className="setting-pills">
           {[
-            { label: 'Small', val: 0.25 },
-            { label: 'Medium', val: 0.4 },
-            { label: 'Large', val: 0.6 }
+            { label: '小', val: 0.25 },
+            { label: '中', val: 0.4 },
+            { label: '大', val: 0.6 }
           ].map((opt) => (
             <button
               key={opt.label}
@@ -121,14 +189,14 @@ export function Settings() {
       {/* Edge trigger width */}
       <div className="setting-row vertical">
         <div className="setting-info">
-          <div className="setting-title">Edge trigger thickness</div>
-          <div className="setting-desc">Physical thickness of the trigger area</div>
+          <div className="setting-title">边缘触发厚度</div>
+          <div className="setting-desc">触发区域的物理宽度</div>
         </div>
         <div className="setting-pills">
           {[
-            { label: 'Small', val: 3 },
-            { label: 'Medium', val: 6 },
-            { label: 'Large', val: 12 }
+            { label: '小', val: 3 },
+            { label: '中', val: 6 },
+            { label: '大', val: 12 }
           ].map((opt) => (
             <button
               key={opt.label}
@@ -146,14 +214,14 @@ export function Settings() {
       {/* Panel height */}
       <div className="setting-row vertical">
         <div className="setting-info">
-          <div className="setting-title">Panel height</div>
-          <div className="setting-desc">Vertical size of the clipboard panel</div>
+          <div className="setting-title">面板高度</div>
+          <div className="setting-desc">剪贴板面板的垂直尺寸</div>
         </div>
         <div className="setting-pills">
           {[
-            { label: 'Small', val: 0.5 },
-            { label: 'Medium', val: 0.65 },
-            { label: 'Large', val: 0.8 }
+            { label: '小', val: 0.5 },
+            { label: '中', val: 0.65 },
+            { label: '大', val: 0.8 }
           ].map((opt) => (
             <button
               key={opt.label}
@@ -171,8 +239,8 @@ export function Settings() {
       {/* Incognito mode */}
       <div className="setting-row">
         <div className="setting-info">
-          <div className="setting-title">Incognito mode</div>
-          <div className="setting-desc">Temporarily pause recording new clipboard items</div>
+          <div className="setting-title">无痕模式</div>
+          <div className="setting-desc">暂停记录新的剪贴板内容</div>
         </div>
         <Toggle
           checked={settings.incognito}
@@ -185,8 +253,8 @@ export function Settings() {
       {/* Launch at login */}
       <div className="setting-row">
         <div className="setting-info">
-          <div className="setting-title">Launch at login</div>
-          <div className="setting-desc">Start silently in background when computer boots</div>
+          <div className="setting-title">开机自启</div>
+          <div className="setting-desc">电脑启动时在后台静默运行</div>
         </div>
         <Toggle
           checked={settings.launchAtLogin}
@@ -196,31 +264,6 @@ export function Settings() {
 
       <div className="setting-divider" />
 
-      {/* GitHub Star Promo */}
-      <div className="github-promo">
-        <div className="github-promo-text">
-          If you like the application, please give a star to the GitHub repository - it means a lot!
-        </div>
-        <button
-          className="github-promo-btn"
-          onClick={() => window.open('https://github.com/Deepender25/Edge-Drop', '_blank')}
-        >
-          <svg
-            className="star-icon"
-            viewBox="0 0 24 24"
-            width="14"
-            height="14"
-            fill="currentColor"
-            style={{ marginRight: 6 }}
-          >
-            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-          </svg>
-          Star on GitHub
-        </button>
-        <div className="app-version-footer">
-          Version {currentVersion || '0.1.0'}
-        </div>
-      </div>
 
     </div>
   )

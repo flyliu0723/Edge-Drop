@@ -17,6 +17,8 @@ import { readFileSync } from 'node:fs'
 import { PATHS } from '../store/paths'
 import { prefetchFileIcons } from './drag'
 import { runtime } from './config'
+import { buildTextData } from '../clipboard/formats'
+import { pruneTransferExpired } from '../transfer/service'
 
 const store = new ItemStore()
 const watcher = new ClipboardWatcher(600)
@@ -63,6 +65,7 @@ export function initState(): void {
       watcher.resyncSignature()
       pushState.items()
     }
+    pruneTransferExpired()
   }, 60_000)
 }
 
@@ -126,6 +129,95 @@ export interface AddFilesResult {
  * collapsing everything into a generic bundle that loses image previews). Each
  * partition is then chunked into stacks of at most MAX_STACK items.
  */
+
+/** Map a file extension to a MIME for the nativeImage data-URL fallback. */
+function extToMime(ext: string): string {
+  switch (ext) {
+    case 'svg': return 'image/svg+xml'
+    case 'gif': return 'image/gif'
+    case 'webp': return 'image/webp'
+    case 'bmp': return 'image/bmp'
+    case 'avif': return 'image/avif'
+    case 'ico': return 'image/x-icon'
+    case 'jpg': case 'jpeg': case 'jfif': case 'pjpeg': case 'pjp': return 'image/jpeg'
+    case 'tif': case 'tiff': return 'image/tiff'
+    default: return 'image/png'
+  }
+}
+
+/**
+ * Build an image entry (id + dimensions + staged bytes) from raw image bytes.
+ * Returns null if the bytes can't be decoded as an image at all. Used by both
+ * the file-drop and URL-drop paths so they share the same dimension logic.
+ */
+function buildImageEntry(rawBytes: Buffer, ext: string): { imageId: string; width: number; height: number; bytes: number; ext: string } | null {
+  let img = nativeImage.createFromBuffer(rawBytes)
+  if (img.isEmpty()) {
+    const mime = extToMime(ext)
+    const dataUrl = `data:${mime};base64,${rawBytes.toString('base64')}`
+    img = nativeImage.createFromDataURL(dataUrl)
+  }
+
+  let width = 300
+  let height = 300
+  if (!img.isEmpty()) {
+    const size = img.getSize()
+    if (size.width > 0 && size.height > 0) {
+      width = size.width
+      height = size.height
+    }
+  } else if (rawBytes.length === 0) {
+    return null
+  }
+
+  const imageId = createId()
+  store.stageImageBytes(imageId, rawBytes, ext)
+  return { imageId, width, height, bytes: rawBytes.length, ext }
+}
+
+/**
+ * Fetch an image from a URL (a picture dragged in from a browser) and add it
+ * as an image item. Supports http(s) URLs (fetched with a browser-like UA and
+ * redirect following) and `data:` URLs (decoded inline). Throws on fetch
+ * failure so the IPC layer can show an informative toast.
+ */
+export async function addImageFromUrl(url: string): Promise<boolean> {
+  let rawBytes: Buffer
+  let ext = 'png'
+
+  const dataMatch = url.match(/^data:([^;]+)?;base64,([\s\S]+)$/i)
+  if (dataMatch) {
+    const media = (dataMatch[1] || 'image/png').toLowerCase()
+    rawBytes = Buffer.from(dataMatch[2], 'base64')
+    ext = media.split('/')[1]?.split('+')[0] || 'png'
+  } else {
+    if (!/^https?:\/\//i.test(url)) throw new Error('不支持的图片地址')
+    const res = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+        Accept: 'image/*,*/*;q=0.8'
+      }
+    })
+    if (!res.ok) throw new Error(`下载失败：HTTP ${res.status}`)
+    rawBytes = Buffer.from(await res.arrayBuffer())
+    const ctype = (res.headers.get('content-type') || '').toLowerCase()
+    if (ctype.startsWith('image/')) {
+      ext = ctype.split('/')[1].split('+')[0] || 'png'
+    } else {
+      const m = url.match(/\.([a-z0-9]+)(?:[?#]|$)/i)
+      ext = m ? m[1].toLowerCase() : 'png'
+    }
+  }
+
+  const entry = buildImageEntry(rawBytes, ext)
+  if (!entry) throw new Error('无法识别的图片数据')
+  const limit = loadSettings().historyLimit
+  const changed = store.add({ kind: 'image', ...entry }, limit)
+  if (changed) pushState.items()
+  return changed
+}
+
 export function addFiles(paths: string[]): AddFilesResult {
   // Prevent duplicating items when a user accidentally drops our own staged temp
   // files back into the app. Real files are deduplicated automatically by path,
@@ -151,36 +243,10 @@ export function addFiles(paths: string[]): AddFilesResult {
     for (const p of imagePaths) {
       try {
         const rawBytes = readFileSync(p)
-        let img = nativeImage.createFromBuffer(rawBytes)
-        if (img.isEmpty()) {
-          const ext = p.split('.').pop()?.toLowerCase() ?? 'png'
-          const mime = ext === 'svg' ? 'image/svg+xml'
-            : ext === 'gif' ? 'image/gif'
-            : ext === 'webp' ? 'image/webp'
-            : ext === 'bmp' ? 'image/bmp'
-            : ext === 'avif' ? 'image/avif'
-            : ext === 'ico' ? 'image/x-icon'
-            : ext === 'jpg' || ext === 'jpeg' || ext === 'jfif' || ext === 'pjpeg' || ext === 'pjp' ? 'image/jpeg'
-            : ext === 'tif' || ext === 'tiff' ? 'image/tiff'
-            : 'image/png'
-          const dataUrl = `data:${mime};base64,${rawBytes.toString('base64')}`
-          img = nativeImage.createFromDataURL(dataUrl)
-        }
-
         const ext = p.split('.').pop()?.toLowerCase() || 'png'
-        let width = 300
-        let height = 300
-        if (!img.isEmpty()) {
-          const size = img.getSize()
-          if (size.width > 0 && size.height > 0) {
-            width = size.width
-            height = size.height
-          }
-        }
-
-        const imageId = createId()
-        store.stageImageBytes(imageId, rawBytes, ext)
-        images.push({ imageId, width, height, bytes: rawBytes.length, ext })
+        const entry = buildImageEntry(rawBytes, ext)
+        if (entry) images.push(entry)
+        else otherPaths.push(p) // unreadable / non-image -> treat as plain file
       } catch {
         otherPaths.push(p) // unreadable -> treat as plain file
       }
@@ -206,4 +272,18 @@ export function addFiles(paths: string[]): AddFilesResult {
 
   if (stacksCreated > 0) pushState.items()
   return { stacksCreated }
+}
+
+/**
+ * Import dragged-in text (a text selection dropped from another app).
+ * Classifies it as URL / color the same way the clipboard reader does, then
+ * adds it as a text item. Returns true if the store actually changed.
+ */
+export function addText(text: string, html?: string): boolean {
+  const data = buildTextData(text, html)
+  if (!data.text) return false
+  const limit = loadSettings().historyLimit
+  const changed = store.add(data, limit)
+  if (changed) pushState.items()
+  return changed
 }

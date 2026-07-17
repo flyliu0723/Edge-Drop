@@ -16,19 +16,19 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/** Relative time like "just now", "3m ago", "2h ago", or a date. */
+/** Relative time like "刚刚", "3 分钟前", "2 小时前", or a date. */
 export function relativeTime(ts: number): string {
   const diff = Date.now() - ts
   const s = Math.round(diff / 1000)
-  if (s < 5) return 'just now'
-  if (s < 60) return `${s}s ago`
+  if (s < 5) return '刚刚'
+  if (s < 60) return `${s} 秒前`
   const m = Math.round(s / 60)
-  if (m < 60) return `${m}m ago`
+  if (m < 60) return `${m} 分钟前`
   const h = Math.round(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return `${h} 小时前`
   const d = Math.round(h / 24)
-  if (d < 7) return `${d}d ago`
-  return new Date(ts).toLocaleDateString()
+  if (d < 7) return `${d} 天前`
+  return new Date(ts).toLocaleDateString('zh-CN')
 }
 
 /** Pull a filename out of a path, cross-platform. */

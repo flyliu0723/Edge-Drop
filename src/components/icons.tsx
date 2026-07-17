@@ -81,6 +81,52 @@ export const CloseIcon = (p: P) => (
   </svg>
 )
 
+/** 手机 / 传到手机 */
+export const PhoneIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path
+      fill="currentColor"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M8 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H8Zm0 2h8a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm3 14a1 1 0 0 1 1-1h0a1 1 0 1 1 0 2h0a1 1 0 0 1-1-1Z"
+    />
+  </svg>
+)
+
+/** 添加 */
+export const PlusIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path
+      fill="currentColor"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M12 4a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6V5a1 1 0 0 1 1-1Z"
+    />
+  </svg>
+)
+
+/** 剪贴板 */
+export const ClipboardIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path
+      fill="currentColor"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M9 3a2 2 0 0 0-2 2H6a3 3 0 0 0-3 3v13a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3h-1a2 2 0 0 0-2-2H9Zm0 2h6v1H9V5ZM6 7h1.5A2.5 2.5 0 0 0 10 9.5h4A2.5 2.5 0 0 0 16.5 7H18a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
+    />
+  </svg>
+)
+
+/** 更多操作 */
+export const MoreIcon = (p: P) => (
+  <svg {...base(p)}>
+    <path
+      fill="currentColor"
+      d="M6 12a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0Zm7.5 0a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0ZM21 12a1.5 1.5 0 1 1-3 0a1.5 1.5 0 0 1 3 0Z"
+    />
+  </svg>
+)
+
 export const MinusIcon = (p: P) => (
   <svg {...base(p)}>
     <g>		<path fill="currentColor" fillRule="evenodd" d="M21 12a1 1 0 0 1-1 1H4a1 1 0 1 1 0-2h16a1 1 0 0 1 1 1" clipRule="evenodd" />	</g>

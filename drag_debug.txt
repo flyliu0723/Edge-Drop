@@ -3463,3 +3463,135 @@
 [2026-07-15T12:00:36.093Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
 [2026-07-15T12:00:36.094Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
 [2026-07-15T12:00:36.094Z] calling sender.startDrag with item.file=C:\Users\yadav\Downloads\test_project.py, item.files=["C:\\Users\\yadav\\Downloads\\test_project.py"]
+[2026-07-17T01:30:42.481Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:30:42.613Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:30:42.614Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:30:42.737Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:30:42.738Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:30:42.836Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:35:22.754Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:35:22.872Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:35:22.872Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:35:22.983Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:35:22.984Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:35:23.091Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:38:20.859Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:38:20.982Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:38:20.982Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:38:21.085Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:38:21.086Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:38:21.182Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:38:36.820Z] startDragOut called for kind=image
+[2026-07-17T01:38:36.821Z] staged: file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mro9oes6-4se894uz.png, files=undefined
+[2026-07-17T01:38:36.822Z] dragIcon called for kind=image
+[2026-07-17T01:38:36.822Z] image drag requested: count=1. Returning custom image card stack icon!
+[2026-07-17T01:38:36.823Z] createFileStackDragIcon returning cached for stack|solid-black|image|1
+[2026-07-17T01:38:36.823Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:38:36.823Z] calling sender.startDrag with item.file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mro9oes6-4se894uz.png, item.files=undefined
+[2026-07-17T01:38:40.356Z] startDragOut called for kind=image
+[2026-07-17T01:38:40.358Z] staged: file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mro9oes6-4se894uz.png, files=undefined
+[2026-07-17T01:38:40.360Z] dragIcon called for kind=image
+[2026-07-17T01:38:40.362Z] image drag requested: count=1. Returning custom image card stack icon!
+[2026-07-17T01:38:40.365Z] createFileStackDragIcon returning cached for stack|solid-black|image|1
+[2026-07-17T01:38:40.366Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:38:40.367Z] calling sender.startDrag with item.file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mro9oes6-4se894uz.png, item.files=undefined
+[2026-07-17T01:58:26.191Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:58:26.326Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:58:26.326Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:58:26.458Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T01:58:26.458Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T01:58:26.559Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:01:38.607Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:01:38.734Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:01:38.735Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:01:38.836Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:01:38.837Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:01:38.939Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:02:07.685Z] startDragOut called for kind=image
+[2026-07-17T02:02:07.689Z] staged: file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mro8b6r0-b1tdm5tb.png, files=undefined
+[2026-07-17T02:02:07.690Z] dragIcon called for kind=image
+[2026-07-17T02:02:07.690Z] image drag requested: count=1. Returning custom image card stack icon!
+[2026-07-17T02:02:07.690Z] createFileStackDragIcon returning cached for stack|solid-black|image|1
+[2026-07-17T02:02:07.691Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:02:07.691Z] calling sender.startDrag with item.file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mro8b6r0-b1tdm5tb.png, item.files=undefined
+[2026-07-17T02:09:44.879Z] startDragOut called for kind=files
+[2026-07-17T02:09:44.880Z] staged: file=D:\Backup\Documents\test.doc, files=["D:\\Backup\\Documents\\test.doc"]
+[2026-07-17T02:09:44.880Z] dragIcon called for kind=files
+[2026-07-17T02:09:44.881Z] files check: count=1, paths=["D:\\Backup\\Documents\\test.doc"]
+[2026-07-17T02:09:44.882Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:09:45.004Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:09:45.005Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:09:45.005Z] calling sender.startDrag with item.file=D:\Backup\Documents\test.doc, item.files=["D:\\Backup\\Documents\\test.doc"]
+[2026-07-17T02:10:41.687Z] startDragOut called for kind=image
+[2026-07-17T02:10:41.690Z] staged: file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mroao5c3-2niin76l.png, files=undefined
+[2026-07-17T02:10:41.690Z] dragIcon called for kind=image
+[2026-07-17T02:10:41.691Z] image drag requested: count=1. Returning custom image card stack icon!
+[2026-07-17T02:10:41.691Z] createFileStackDragIcon returning cached for stack|solid-black|image|1
+[2026-07-17T02:10:41.691Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:10:41.691Z] calling sender.startDrag with item.file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mroao5c3-2niin76l.png, item.files=undefined
+[2026-07-17T02:19:21.180Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:19:21.300Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:19:21.301Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:19:21.407Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:19:21.407Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:19:21.508Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:26:05.802Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:26:05.922Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:26:05.922Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:26:06.030Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:26:06.030Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:26:06.134Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:27:58.308Z] startDragOut called for kind=files
+[2026-07-17T02:27:58.308Z] staged: file=D:\Backup\Downloads\goku-watching-sunset-dragon-ball-moewalls-com.mp4, files=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:27:58.309Z] dragIcon called for kind=files
+[2026-07-17T02:27:58.309Z] files check: count=1, paths=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:27:58.309Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:27:58.424Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:27:58.424Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:27:58.424Z] calling sender.startDrag with item.file=D:\Backup\Downloads\goku-watching-sunset-dragon-ball-moewalls-com.mp4, item.files=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:28:17.302Z] startDragOut called for kind=image
+[2026-07-17T02:28:17.303Z] staged: file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mrobj9wm-blchtm73.jpg, files=undefined
+[2026-07-17T02:28:17.304Z] dragIcon called for kind=image
+[2026-07-17T02:28:17.304Z] image drag requested: count=1. Returning custom image card stack icon!
+[2026-07-17T02:28:17.305Z] createFileStackDragIcon returning cached for stack|solid-black|image|1
+[2026-07-17T02:28:17.305Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:28:17.305Z] calling sender.startDrag with item.file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mrobj9wm-blchtm73.jpg, item.files=undefined
+[2026-07-17T02:28:21.289Z] startDragOut called for kind=image
+[2026-07-17T02:28:21.292Z] staged: file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mroao5c3-2niin76l.png, files=undefined
+[2026-07-17T02:28:21.292Z] dragIcon called for kind=image
+[2026-07-17T02:28:21.292Z] image drag requested: count=1. Returning custom image card stack icon!
+[2026-07-17T02:28:21.293Z] createFileStackDragIcon returning cached for stack|solid-black|image|1
+[2026-07-17T02:28:21.293Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:28:21.293Z] calling sender.startDrag with item.file=C:\Users\Administrator\AppData\Roaming\edge-drop\temp\mroao5c3-2niin76l.png, item.files=undefined
+[2026-07-17T02:28:38.549Z] startDragOut called for kind=files
+[2026-07-17T02:28:38.549Z] staged: file=D:\Backup\Downloads\goku-watching-sunset-dragon-ball-moewalls-com.mp4, files=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:28:38.550Z] dragIcon called for kind=files
+[2026-07-17T02:28:38.551Z] files check: count=1, paths=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:28:38.551Z] createFileStackDragIcon returning cached for stack|solid-black|video|1
+[2026-07-17T02:28:38.552Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:28:38.553Z] calling sender.startDrag with item.file=D:\Backup\Downloads\goku-watching-sunset-dragon-ball-moewalls-com.mp4, item.files=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:28:39.976Z] startDragOut called for kind=files
+[2026-07-17T02:28:39.976Z] staged: file=D:\Backup\Downloads\goku-watching-sunset-dragon-ball-moewalls-com.mp4, files=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:28:39.977Z] dragIcon called for kind=files
+[2026-07-17T02:28:39.977Z] files check: count=1, paths=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:28:39.977Z] createFileStackDragIcon returning cached for stack|solid-black|video|1
+[2026-07-17T02:28:39.978Z] dragIcon result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:28:39.978Z] calling sender.startDrag with item.file=D:\Backup\Downloads\goku-watching-sunset-dragon-ball-moewalls-com.mp4, item.files=["D:\\Backup\\Downloads\\goku-watching-sunset-dragon-ball-moewalls-com.mp4"]
+[2026-07-17T02:59:08.223Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:59:08.357Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:59:08.358Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:59:08.459Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T02:59:08.459Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T02:59:08.576Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T03:14:27.532Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T03:14:27.651Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T03:14:27.651Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T03:14:27.756Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T03:14:27.757Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T03:14:27.856Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T03:23:39.962Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T03:23:40.092Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T03:23:40.092Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T03:23:40.198Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}
+[2026-07-17T03:23:40.198Z] createFileStackDragIcon calling Resvg for count=1
+[2026-07-17T03:23:40.300Z] createFileStackDragIcon resvg result: isEmpty=false, size={"width":96,"height":96}

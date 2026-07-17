@@ -6,8 +6,10 @@
  * defaults so a bad field never takes the whole app down.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { screen } from 'electron'
 import { DEFAULT_SETTINGS, type Settings } from '../../shared/types'
 import { PATHS } from './paths'
+import { normalizeAnchorSettings } from '../main/displays'
 
 let cache: Settings | null = null
 
@@ -20,7 +22,13 @@ function merge(base: Settings, patch: Partial<Settings>): Settings {
   if (out.uiStyle !== 'modern' && out.uiStyle !== 'compact') {
     out.uiStyle = 'modern'
   }
-  return out
+  if (out.anchorEdge !== 'left' && out.anchorEdge !== 'right') {
+    out.anchorEdge = 'left'
+  }
+  if (!out.anchorDisplayId) {
+    out.anchorDisplayId = screen.getPrimaryDisplay().id
+  }
+  return normalizeAnchorSettings(out)
 }
 
 export function loadSettings(): Settings {

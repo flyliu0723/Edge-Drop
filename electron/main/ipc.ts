@@ -10,13 +10,26 @@ import { existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { psHost } from './powershell'
 import { type InvokeMap, type InvokeChannel, type SendMap, type SendChannel } from '../../shared/ipc'
-import { getStore, loadSettings, saveSettings, pushState, addFiles, getWatcher } from './state'
+import { getStore, loadSettings, saveSettings, pushState, addFiles, addText, addImageFromUrl, getWatcher } from './state'
 import { getMainWindow } from './window'
-import { setInteractive, setHeartbeatPaused, setHotZoneWidth } from './window'
+import { setInteractive, setHeartbeatPaused, setHotZoneWidth, setAnchorConfig, applyWindowBounds } from './window'
 import { getOnboardingWindow } from './onboardingWindow'
+import { listAnchorOptions } from './displays'
 import { startDragOut, resolveDragData } from './drag'
 import { clipboardSignature } from '../clipboard/formats'
 import type { ItemData, MergeResult } from '../../shared/types'
+import {
+  getTransferState,
+  generateQr,
+  doRevokeQr,
+  doStageFiles,
+  doStageHistoryItem,
+  doStageClipboard,
+  doRemoveItem,
+  doRemoveBundle,
+  pickFiles,
+  doSetLanIp
+} from '../transfer/service'
 
 /**
  * Returns true if the current system clipboard content matches the given item data.
@@ -182,6 +195,49 @@ export function registerIpc(): void {
       return null
     }
   })
+
+  handle('displays:list-anchors', () => listAnchorOptions())
+
+  handle('transfer:list', () => getTransferState())
+
+  handle('transfer:stage-file', (paths) => doStageFiles(paths))
+
+  handle('transfer:stage-item', (itemId) => {
+    try {
+      return doStageHistoryItem(itemId)
+    } catch (e) {
+      toast((e as Error).message || '无法加入暂存箱', 'error')
+      throw e
+    }
+  })
+
+  handle('transfer:stage-clipboard', () => {
+    try {
+      return doStageClipboard()
+    } catch (e) {
+      toast((e as Error).message || '无法读取剪贴板', 'error')
+      return getTransferState()
+    }
+  })
+
+  handle('transfer:remove-item', (bundleId, itemId) => doRemoveItem(bundleId, itemId))
+
+  handle('transfer:remove-bundle', (bundleId) => doRemoveBundle(bundleId))
+
+  handle('transfer:generate-qr', async (target) => {
+    try {
+      return await generateQr(target)
+    } catch (e) {
+      toast((e as Error).message || '生成二维码失败', 'error')
+      throw e
+    }
+  })
+
+  handle('transfer:revoke-qr', (token) => doRevokeQr(token))
+
+  handle('transfer:pick-files', () => pickFiles())
+
+  handle('transfer:set-lan-ip', (ip) => doSetLanIp(ip))
 
   handle('item:set-pinned', (id, pinned) => {
     getStore().setPinned(id, pinned)
@@ -392,7 +448,21 @@ export function registerIpc(): void {
     // If a large drop was split into several stacks, let the user know why
     // they suddenly see multiple items instead of one bundle.
     if (result.stacksCreated > 1) {
-      toast(`Split into ${result.stacksCreated} stacks (max 10 each)`, 'info')
+      toast(`已拆分为 ${result.stacksCreated} 个堆叠（每个最多 10 项）`, 'info')
+    }
+    return getStore().toDto()
+  })
+
+  handle('item:add-text', (text, html) => {
+    addText(text, html)
+    return getStore().toDto()
+  })
+
+  handle('item:add-image-url', async (url) => {
+    try {
+      await addImageFromUrl(url)
+    } catch (e) {
+      toast(`图片下载失败：${(e as Error).message || '未知错误'}`, 'error')
     }
     return getStore().toDto()
   })
@@ -408,9 +478,9 @@ export function registerIpc(): void {
     if (result.ok) {
       pushState.items()
     } else if (result.reason === 'full') {
-      toast(result.message || 'Collection is full (10 max)', 'info')
+      toast(result.message || '堆叠已满（最多 10 项）', 'info')
     } else if (result.reason === 'incompatible') {
-      toast(result.message || 'Cannot combine different item types', 'info')
+      toast(result.message || '无法合并不同类型的项', 'info')
     }
     // 'notfound' fails silently
     return result
@@ -436,6 +506,14 @@ export function registerIpc(): void {
     }
     if (patch.hotZoneWidth !== undefined) {
       setHotZoneWidth(patch.hotZoneWidth)
+    }
+    if (
+      patch.anchorDisplayId !== undefined ||
+      patch.anchorEdge !== undefined ||
+      patch.hotZoneWidth !== undefined
+    ) {
+      setAnchorConfig(next.anchorDisplayId, next.anchorEdge)
+      applyWindowBounds()
     }
     pushState.settings(next)
     return next

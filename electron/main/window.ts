@@ -1,24 +1,9 @@
 /**
  * The edge panel BrowserWindow.
  *
- * The window is the full *expanded* size and sits at the left edge of the
- * primary display's work area. It is transparent and frameless, and is normally
- * click-through (`setIgnoreMouseEvents(true, { forward: true })`) so the desktop
- * stays fully usable. The renderer listens for pointer movement across the whole
- * page (which is still delivered even while click-through, thanks to `forward`)
- * and toggles interactivity via `setInteractive` once the cursor dwells in the
- * hot zone. This is what produces the "invisible until you approach the edge"
- * effect without a separate hidden trigger window.
- *
- * Drag-in support: a separate thin "detector" window is layered behind the
- * main panel. Historically it was kept non-click-through so it could receive
- * OS dragenter events, but on Windows that made it swallow all desktop clicks
- * across the hint-bar band (a transparent always-on-top BrowserWindow still
- * hit-tests across a minimum footprint). It is now click-through too; drag-in
- * still works because the main-process cursor poll (startCursorPoll) reads the
- * OS cursor position independently of mouse events, so it fires during an OS
- * file drag — the edge dwell opens the panel and makes the main window
- * interactive, and the drop then lands on the main window.
+ * The window is anchored to a user-selected display edge (left or right).
+ * It is transparent and frameless, and is normally click-through so the desktop
+ * stays fully usable. Edge detection runs in the main-process cursor poll.
  *
  * NOTE: this module must NOT import from state.ts to avoid circular dependencies.
  */
@@ -27,6 +12,8 @@ import { join } from 'node:path'
 import { APP_CONFIG } from './config'
 import { runtime } from './config'
 import { PATHS } from '../store/paths'
+import { computePanelBounds, resolveAnchorDisplay } from './displays'
+import type { AnchorEdge } from '../../shared/types'
 
 export const PANEL_WIDTH = 384
 /** Visual width of the blade when collapsed (only used by the renderer). */
@@ -37,9 +24,31 @@ let detectorWindow: BrowserWindow | null = null
 let interactive = false
 
 export let currentHotZoneWidth = 3
+let currentAnchorDisplayId: number | null = null
+let currentAnchorEdge: AnchorEdge = 'left'
+
+function ensureAnchorDisplayId(): number {
+  if (currentAnchorDisplayId === null) {
+    currentAnchorDisplayId = screen.getPrimaryDisplay().id
+  }
+  return currentAnchorDisplayId
+}
 
 export function setHotZoneWidth(width: number): void {
   currentHotZoneWidth = width
+}
+
+export function setAnchorConfig(displayId: number, edge: AnchorEdge): void {
+  currentAnchorDisplayId = displayId
+  currentAnchorEdge = edge
+}
+
+export function getAnchorEdge(): AnchorEdge {
+  return currentAnchorEdge
+}
+
+export function getAnchorDisplayId(): number {
+  return ensureAnchorDisplayId()
 }
 
 export function getMainWindow(): BrowserWindow | null {
@@ -51,62 +60,26 @@ export function isInteractive(): boolean {
   return interactive
 }
 
-/**
- * Toggle whether the panel swallows pointer events.
- *
- * - interactive=false (collapsed) -> click-through: Windows passes ALL mouse
- *   clicks to apps beneath. Edge detection is done by the main-process cursor
- *   poll (startCursorPoll), which reads screen.getCursorScreenPoint() directly,
- *   so no mouse-event forwarding is needed.
- * - interactive=true  (expanded) -> normal interactive window: the black blade
- *   captures all clicks.
- */
 export function setInteractive(value: boolean): void {
   if (!mainWindow || value === interactive) return
   interactive = value
   if (value) {
-    // Panel is open: disable click-through so user can interact.
     mainWindow.setIgnoreMouseEvents(false)
-    // Use 'screen-saver' level to stay above fullscreen apps (YouTube fullscreen, games, etc.)
-    // 'floating' (HWND_TOPMOST) can be pushed behind by fullscreen D3D/browser windows.
     mainWindow.setAlwaysOnTop(true, 'screen-saver')
   } else {
-    // Panel is closed: full click-through, no forwarding needed.
     mainWindow.setIgnoreMouseEvents(true, { forward: false })
     mainWindow.setAlwaysOnTop(true, 'screen-saver')
   }
 }
 
-/**
- * Poll the OS cursor position every ~16ms and send `window:cursor-edge` to
- * the renderer. This is the reliable alternative to `forward:true` on Windows
- * transparent windows, where pointermove forwarding often silently stops
- * working.
- */
 let cursorPollTimer: ReturnType<typeof setInterval> | null = null
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 let lastEdgeState = false
 let heartbeatPaused = false
 
-/**
- * Temporarily suspend the always-on-top heartbeat.
- *
- * The heartbeat calls setAlwaysOnTop() every 500 ms, which reasserts z-order
- * via SetWindowPos(HWND_TOPMOST) on Windows.  During a native drag the OS
- * renders the drag-ghost image using the DWM compositor at a layer that sits
- * BELOW HWND_TOPMOST windows.  Every heartbeat tick therefore pushes our
- * window in front of the ghost, making it disappear ~0.5 s into any drag.
- *
- * Pausing the heartbeat for the duration of the drag keeps the window at its
- * current z-position and lets the DWM ghost stay visible for the full drag.
- * The heartbeat is re-enabled (and immediately re-asserts always-on-top) when
- * the drag ends.
- */
 export function setHeartbeatPaused(paused: boolean): void {
   heartbeatPaused = paused
   if (!paused) {
-    // Re-assert z-order immediately when drag ends so the window snaps back
-    // to the correct level without waiting up to 500 ms for the next tick.
     if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
       mainWindow.setAlwaysOnTop(true, 'screen-saver')
     }
@@ -116,35 +89,71 @@ export function setHeartbeatPaused(paused: boolean): void {
   }
 }
 
+function edgeGeometry(): { x: number; y: number; width: number; height: number } {
+  const display = resolveAnchorDisplay({
+    anchorDisplayId: ensureAnchorDisplayId(),
+    anchorEdge: currentAnchorEdge
+  })
+  return computePanelBounds(display, currentAnchorEdge, PANEL_WIDTH)
+}
+
+function repositionDetector(g: { x: number; y: number; width: number; height: number }): void {
+  if (!detectorWindow || detectorWindow.isDestroyed()) return
+  const detHeight = Math.floor(g.height * 0.3)
+  const detY = g.y + Math.floor((g.height - detHeight) / 2)
+  const detX = currentAnchorEdge === 'right' ? g.x + g.width - 1 : g.x
+  detectorWindow.setBounds({ x: detX, y: detY, width: 1, height: detHeight })
+}
+
+/** Re-apply bounds after anchor or display layout changes. */
+export function applyWindowBounds(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  const g = edgeGeometry()
+  mainWindow.setBounds({ ...g })
+  repositionDetector(g)
+}
+
+function cursorOnAnchorDisplay(pt: { x: number; y: number }): boolean {
+  const display = resolveAnchorDisplay({
+    anchorDisplayId: ensureAnchorDisplayId(),
+    anchorEdge: currentAnchorEdge
+  })
+  const wa = display.workArea
+  return pt.x >= wa.x && pt.x < wa.x + wa.width && pt.y >= wa.y && pt.y < wa.y + wa.height
+}
+
+function isInHotEdge(clientX: number, windowWidth: number): boolean {
+  if (currentAnchorEdge === 'right') {
+    return clientX >= windowWidth - currentHotZoneWidth
+  }
+  return clientX <= currentHotZoneWidth
+}
+
+function shouldStreamCursor(clientX: number, windowWidth: number): boolean {
+  const nearEdge = currentAnchorEdge === 'right'
+    ? clientX >= windowWidth - 450
+    : clientX <= 450
+  return nearEdge || interactive
+}
+
 export function startCursorPoll(): void {
   if (cursorPollTimer !== null) return
   cursorPollTimer = setInterval(() => {
     if (runtime.quitting || !mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return
 
     const pt = screen.getCursorScreenPoint()
-    const display = screen.getDisplayNearestPoint(pt)
-    const wa = display.workArea
+    if (!cursorOnAnchorDisplay(pt)) return
 
-    // Translate screen coords → window-client coords.
-    // getCursorScreenPoint() returns physical pixels on Windows; workArea is
-    // already in physical pixels when scaleFactor > 1 in Electron's screen API.
-    const clientX = pt.x - wa.x
-    const clientY = pt.y - wa.y
+    const bounds = mainWindow.getBounds()
+    const clientX = pt.x - bounds.x
+    const clientY = pt.y - bounds.y
 
-    // Guard against garbage values that Windows occasionally sends.
     if (clientX < -1000 || clientX > 10000 || clientY < -1000 || clientY > 10000) return
 
-    const inEdge = clientX <= currentHotZoneWidth
+    const inEdge = isInHotEdge(clientX, bounds.width)
     const newState = inEdge
 
-    // Keep streaming the cursor position to the renderer while it is near the
-    // edge (so opening works) OR while the panel is open (so closing works in
-    // EVERY direction). Previously we only streamed while clientX <= 60, which
-    // froze the renderer's last-known position the moment the cursor moved to
-    // the right past 60px — so it never learned the cursor had left and the
-    // blade refused to retract horizontally. When the panel is closed and the
-    // cursor is away from the edge we stop streaming to avoid needless IPC.
-    if (clientX <= 450 || interactive || newState !== lastEdgeState) {
+    if (shouldStreamCursor(clientX, bounds.width) || newState !== lastEdgeState) {
       lastEdgeState = newState
       if (!mainWindow.webContents.isDestroyed()) {
         mainWindow.webContents.send('window:cursor-edge', {
@@ -165,27 +174,15 @@ export function stopCursorPoll(): void {
   }
 }
 
-/** Compute geometry anchored to the left edge of the primary display. */
-function edgeGeometry(): { x: number; y: number; width: number; height: number } {
-  const display = screen.getPrimaryDisplay()
-  const workArea = display.workArea
-  return {
-    x: workArea.x,
-    y: workArea.y,
-    width: PANEL_WIDTH,
-    height: workArea.height
-  }
-}
-
 export function createWindow(): BrowserWindow {
-  const { x, y, width, height } = edgeGeometry()
+  const g = edgeGeometry()
 
   mainWindow = new BrowserWindow({
     icon: PATHS.icon(),
-    x,
-    y,
+    x: g.x,
+    y: g.y,
     width: PANEL_WIDTH,
-    height,
+    height: g.height,
     show: false,
     frame: false,
     fullscreenable: false,
@@ -210,31 +207,25 @@ export function createWindow(): BrowserWindow {
     }
   })
 
-  // Start click-through with no forwarding — edge detection is done via cursor poll.
   mainWindow.setIgnoreMouseEvents(true, { forward: false })
 
-  // Keep the panel glued to the primary display if the work area changes.
-  screen.on('display-metrics-changed', () => {
+  const onDisplayChange = () => {
     if (!mainWindow?.isVisible()) return
-    const g = edgeGeometry()
-    mainWindow.setBounds({ ...g })
-    if (detectorWindow && !detectorWindow.isDestroyed()) {
-      detectorWindow.setBounds({ x: g.x, y: g.y, width: 1, height: g.height })
-    }
-  })
+    applyWindowBounds()
+  }
+  screen.on('display-metrics-changed', onDisplayChange)
+  screen.on('display-added', onDisplayChange)
+  screen.on('display-removed', onDisplayChange)
 
-  // Respect OS-level always-on-top reordering.
   mainWindow.on('focus', () => {
     mainWindow?.setAlwaysOnTop(true, 'screen-saver')
   })
 
-  // Open external links in the default browser.
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
-  // Load the renderer.
   if (APP_CONFIG.is.dev && process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
@@ -244,7 +235,6 @@ export function createWindow(): BrowserWindow {
   mainWindow.once('ready-to-show', () => {
     if (!mainWindow) return
     mainWindow.showInactive()
-    // 'screen-saver' level stays above fullscreen browser windows and games.
     mainWindow.setAlwaysOnTop(true, 'screen-saver')
   })
 
@@ -258,12 +248,8 @@ export function createWindow(): BrowserWindow {
     }
   })
 
-  // Create the detector window for OS drag-in awareness.
-  createDetectorWindow(x, y, width, height)
+  createDetectorWindow(g)
 
-  // Periodic heartbeat: Windows fullscreen apps (Chrome YouTube, games) push
-  // floating windows behind them. Re-asserting 'screen-saver' level every 500ms
-  // ensures the panel instantly re-appears when the user exits fullscreen.
   if (heartbeatTimer !== null) clearInterval(heartbeatTimer)
   heartbeatTimer = setInterval(() => {
     if (runtime.quitting || heartbeatPaused || interactive) return
@@ -285,7 +271,6 @@ export function stopHeartbeat(): void {
   }
 }
 
-/** Toggle the panel between shown (always on top) and fully hidden. */
 export function setVisible(visible: boolean): void {
   if (!mainWindow) return
   if (visible) {
@@ -296,19 +281,7 @@ export function setVisible(visible: boolean): void {
   }
 }
 
-/**
- * Thin invisible detector window.
- *
- * It is click-through just like the main window, so when the panel is collapsed
- * it does not steal desktop clicks. It no longer drives opening (the cursor
- * poll does that). It is kept around as a fallback drag surface and a no-op
- * drag-event absorber; its inline script still forwards file drags to the main
- * window via `window.edge.setInteractive(true)` should it ever receive one.
- */
-function createDetectorWindow(x: number, y: number, _w: number, h: number): void {
-  // Minimal HTML: the detector uses the preload bridge (window.edge) to send IPC.
-  // It listens for dragenter/dragover/drop on the document and sends a signal
-  // when Files are detected.
+function createDetectorWindow(g: { x: number; y: number; width: number; height: number }): void {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
   *{margin:0;padding:0}
@@ -332,12 +305,12 @@ function createDetectorWindow(x: number, y: number, _w: number, h: number): void
 </script>
 </body></html>`
 
-  // Center vertically, 30% height so we don't block the Start menu / taskbar clicks
-  const detHeight = Math.floor(h * 0.3)
-  const detY = y + Math.floor((h - detHeight) / 2)
+  const detHeight = Math.floor(g.height * 0.3)
+  const detY = g.y + Math.floor((g.height - detHeight) / 2)
+  const detX = currentAnchorEdge === 'right' ? g.x + g.width - 1 : g.x
 
   detectorWindow = new BrowserWindow({
-    x,
+    x: detX,
     y: detY,
     width: 1,
     height: detHeight,
@@ -363,22 +336,8 @@ function createDetectorWindow(x: number, y: number, _w: number, h: number): void
     }
   })
 
-  // Click-through, like the main window. A non-click-through always-on-top
-  // window here used to swallow all desktop clicks across the hint-bar band
-  // even though it was only 1px wide (Windows still hit-tests a transparent
-  // always-on-top BrowserWindow across a minimum footprint). Keeping it
-  // click-through means the collapsed panel passes clicks through everywhere.
-  //
-  // Drag-in is NOT lost: the main-process cursor poll
-  // (screen.getCursorScreenPoint) reads the OS cursor position every ~16ms
-  // regardless of mouse events, so it still fires while an OS file drag is in
-  // progress — the 120ms edge dwell opens the panel and makes the main window
-  // interactive, and the drop then lands on the main window.
   detectorWindow.setIgnoreMouseEvents(true, { forward: false })
-
-  // Layer behind the main panel (lower always-on-top level).
   detectorWindow.setAlwaysOnTop(true, 'normal')
-
   detectorWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
 
   detectorWindow.once('ready-to-show', () => {

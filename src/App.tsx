@@ -31,6 +31,9 @@ export default function App() {
     const offItems = edge.onItems((items) => setItems(items))
     const offSettings = edge.onSettings((next) => setSettings(next))
     const offToast = edge.onToast((t) => pushToast(t))
+    const offTransfer = edge.onTransferState((state) => {
+      useStore.getState().setTransferState(state)
+    })
     const offToggle = edge.onToggle((forceOpen) => {
       const next = forceOpen !== undefined ? forceOpen : !useStore.getState().open
       useStore.getState().setOpen(next)
@@ -48,6 +51,7 @@ export default function App() {
       offItems()
       offSettings()
       offToast()
+      offTransfer()
       offToggle()
       offOpenSettings()
       offTutorialStep()

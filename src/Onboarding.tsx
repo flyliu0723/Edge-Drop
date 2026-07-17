@@ -6,50 +6,50 @@ import { Settings } from './components/Settings'
 const slides = [
   {
     id: 'slide-1',
-    title: 'Welcome to Edge-Drop',
-    description: 'Edge-Drop lives hidden on the left edge of your screen. Simply move your mouse to the left edge to open the panel, and move away to hide it.',
+    title: '欢迎使用 Edge-Drop',
+    description: 'Edge-Drop 隐藏在你的屏幕左边缘。将鼠标移到左边缘即可打开面板，移开则自动隐藏。',
     videoSrc: 'placeholder_welcome.mp4',
     placeholderColor: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)'
   },
   {
     id: 'slide-2',
-    title: 'Collect Anything',
-    description: 'Whenever you press Ctrl+C to copy text, images, or files, Edge-Drop automatically catches and saves them in the background.',
+    title: '收集任意内容',
+    description: '当你按 Ctrl+C 复制文本、图片或文件时，Edge-Drop 会在后台自动捕获并保存。',
     videoSrc: 'placeholder_copy.mp4',
     placeholderColor: 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)'
   },
   {
     id: 'slide-3',
-    title: 'Drag & Drop Anywhere',
-    description: 'Need to use an item? Just open the panel and drag the card directly into any application, folder, or document.',
+    title: '拖放到任意位置',
+    description: '需要使用某项内容？打开面板，将卡片直接拖入任意应用、文件夹或文档即可。',
     videoSrc: 'placeholder_drag.mp4',
     placeholderColor: 'linear-gradient(135deg, #43E97B 0%, #38F9D7 100%)'
   },
   {
     id: 'slide-4',
-    title: 'Explore File Stacks',
-    description: 'Copying multiple files groups them into a stack. You can drag the entire stack, or click it to view and extract individual files.',
+    title: '探索文件堆叠',
+    description: '复制多个文件会自动合并为堆叠。你可以拖走整个堆叠，或点击展开查看并提取单个文件。',
     videoSrc: 'placeholder_stacks.mp4',
     placeholderColor: 'linear-gradient(135deg, #FA709A 0%, #FEE140 100%)'
   },
   {
     id: 'slide-5-ungroup',
-    title: 'Ungroup & Split Stacks',
-    description: 'Want to separate items in a stack? Click to expand the stack, then drag any subitem to the left edge of the screen. A glowing coral bar will appear—drop the item on it to extract it back into a standalone card.',
+    title: '拆分堆叠',
+    description: '想要拆分堆叠中的项目？点击展开堆叠，然后将子项拖到屏幕左边缘。会出现一条珊瑚色发光条——将项目拖放上去即可拆分为独立卡片。',
     videoSrc: 'placeholder_ungroup.mp4',
     placeholderColor: 'linear-gradient(135deg, #FAD961 0%, #F76B1C 100%)'
   },
   {
     id: 'slide-5',
-    title: 'Combine & Merge Items',
-    description: 'Combine separate file or image cards by dragging them directly onto each other. This organizes your shelf by bundling related assets into a stack.',
+    title: '合并项目',
+    description: '将文件或图片卡片直接拖放到另一张卡片上即可合并。相关资源会被打包成堆叠，让剪贴板更整洁。',
     videoSrc: 'placeholder_merge.mp4',
     placeholderColor: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)'
   },
   {
     id: 'slide-6',
-    title: 'Configure Your Clipboard',
-    description: 'Customize how Edge-Drop works for you.',
+    title: '配置你的剪贴板',
+    description: '按需自定义 Edge-Drop 的工作方式。',
     videoSrc: '',
     placeholderColor: 'transparent'
   }
@@ -128,7 +128,7 @@ export function Onboarding() {
               onMouseOver={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)' }}
               onMouseOut={(e) => { e.currentTarget.style.color = '#888'; e.currentTarget.style.background = 'transparent' }}
             >
-              Skip
+              跳过
             </button>
           )}
           <button
@@ -148,7 +148,7 @@ export function Onboarding() {
             }}
             onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.color = '#fff' }}
             onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#888' }}
-            title="Minimize"
+            title="最小化"
           >
             <svg width="14" height="2" viewBox="0 0 14 2" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M1 1H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -169,13 +169,13 @@ export function Onboarding() {
               {currentSlide.description}
             </p>
             <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>Quick Tips:</div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>快捷提示：</div>
               <ul style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', margin: 0, paddingLeft: '20px', lineHeight: 1.6 }}>
-                <li>Press <strong>Alt + C</strong> to instantly toggle the shelf.</li>
-                <li>Access settings anytime via the gear icon (top right).</li>
-                <li>Drag & drop files to the left edge to add them.</li>
-                <li>Click a text box, then a clipboard item to auto-paste.</li>
-                <li>Stack files with files (e.g., zip, md, json) or images with images (max 10). Text cannot be stacked.</li>
+                <li>按 <strong>Alt + C</strong> 可快速开关剪贴板面板。</li>
+                <li>随时点击右上角齿轮图标进入设置。</li>
+                <li>将文件拖放到屏幕左边缘即可添加。</li>
+                <li>先点击目标文本框，再点击剪贴板项可自动粘贴。</li>
+                <li>文件可与文件合并（如 zip、md、json），图片可与图片合并（最多 10 项）。文本无法合并。</li>
               </ul>
             </div>
           </div>
@@ -289,7 +289,7 @@ export function Onboarding() {
             onMouseOver={(e) => { if (currentIndex !== 0) e.currentTarget.style.background = '#333' }}
             onMouseOut={(e) => { if (currentIndex !== 0) e.currentTarget.style.background = '#2a2a2a' }}
           >
-            Previous
+            上一步
           </button>
         </div>
 
@@ -330,7 +330,7 @@ export function Onboarding() {
             onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
             onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
           >
-            {currentIndex === slides.length - 1 ? "Save & Let's Go" : 'Next'}
+            {currentIndex === slides.length - 1 ? '保存并开始使用' : '下一步'}
           </button>
         </div>
       </div>

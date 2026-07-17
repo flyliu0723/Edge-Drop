@@ -14,7 +14,7 @@
  * clamped preview; file items list names or bundle badge. Motion is handled by
  * the parent list (layout/AnimatePresence), so this component stays presentational.
  */
-import { memo, useState, useCallback, useEffect } from 'react'
+import { memo, useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ClipboardItemDto } from '../../shared/types'
 import { MAX_STACK } from '../../shared/types'
@@ -23,7 +23,7 @@ import { useStore } from '../store/appStore'
 import { useDragOut } from '../hooks/useDragOut'
 import { basename, formatBytes, previewText, relativeTime } from '../lib/format'
 import { getFileKind } from '../lib/fileType'
-import { CopyIcon, FileKindIcon, ImageIcon, LinkIcon, PinIcon, PinFillIcon, TrashIcon, MinusIcon, ChevronUpIcon } from './icons'
+import { CopyIcon, FileKindIcon, ImageIcon, LinkIcon, PinIcon, PinFillIcon, TrashIcon, MinusIcon, ChevronUpIcon, PhoneIcon, MoreIcon, PlusIcon } from './icons'
 import '../styles/item.css'
 
 /**
@@ -60,16 +60,35 @@ function ClipboardItemBase({ item }: Props) {
   const paste = useStore.getState().paste
   const togglePin = useStore.getState().togglePin
   const remove = useStore.getState().remove
+  const sendToPhone = useStore.getState().sendToPhone
+  const stageToTray = useStore.getState().stageToTray
   const setInternalDragReq = useStore.getState().setInternalDragReq
   const startDrag = useDragOut()
   const [copied, setCopied] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   
   const open = useStore((s) => s.open)
   useEffect(() => {
-    if (!open) setExpanded(false)
+    if (!open) {
+      setExpanded(false)
+      setMenuOpen(false)
+    }
   }, [open])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [menuOpen])
 
   const isBundle = (item.data.kind === 'files' && item.data.paths.length > 1) || item.data.kind === 'image-collection'
 
@@ -79,6 +98,24 @@ function ClipboardItemBase({ item }: Props) {
     setCopied(true)
     window.setTimeout(() => setCopied(false), 900)
   }, [copy, item.id])
+
+  const onSendToPhone = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    if (sending) return
+    setSending(true)
+    try {
+      await sendToPhone(item.id)
+    } finally {
+      setSending(false)
+    }
+  }, [sendToPhone, item.id, sending])
+
+  const onStageToTray = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    await stageToTray(item.id)
+  }, [stageToTray, item.id])
 
   const onPaste = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -125,7 +162,7 @@ function ClipboardItemBase({ item }: Props) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.14 } }}
       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-      className={`item${item.pinned ? ' pinned' : ''}${isBundle ? ' bundle' : ''}`}
+      className={`item${item.pinned ? ' pinned' : ''}${isBundle ? ' bundle' : ''}${menuOpen ? ' menu-open' : ''}`}
     >
       <div
         className="item-main"
@@ -183,7 +220,7 @@ function ClipboardItemBase({ item }: Props) {
               </span>
             )}
             {item.data.kind === 'image' && <span>· {formatBytes(item.data.bytes)}</span>}
-            {copied && <span style={{ color: '#fff' }}>· copied</span>}
+            {copied && <span style={{ color: '#fff' }}>· 已复制</span>}
           </div>
         </div>
 
@@ -194,21 +231,59 @@ function ClipboardItemBase({ item }: Props) {
         >
           <button
             className={`act${item.pinned ? ' active' : ''}`}
-            title={item.pinned ? 'Unpin' : 'Pin'}
+            title={item.pinned ? '取消固定' : '固定'}
             onClick={() => togglePin(item.id, !item.pinned)}
           >
             {item.pinned ? <PinFillIcon /> : <PinIcon />}
           </button>
-          <button className="act" title="Copy" onClick={onCopy}>
+          <button className="act" title="复制" onClick={onCopy}>
             <CopyIcon />
           </button>
-          <button
-            className="act danger"
-            title="Delete"
-            onClick={() => remove(item.id)}
-          >
-            <TrashIcon />
-          </button>
+          <div className="item-more" ref={menuRef}>
+            <button
+              className={`act${menuOpen ? ' active' : ''}`}
+              title="更多"
+              disabled={sending}
+              onClick={(e) => {
+                e.stopPropagation()
+                setMenuOpen((v) => !v)
+              }}
+            >
+              <MoreIcon />
+            </button>
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  className="item-more-menu"
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <button type="button" className="item-more-item" onClick={onSendToPhone} disabled={sending}>
+                    <PhoneIcon width={14} height={14} />
+                    发送到手机
+                  </button>
+                  <button type="button" className="item-more-item" onClick={onStageToTray}>
+                    <PlusIcon width={14} height={14} />
+                    加入暂存箱
+                  </button>
+                  <button
+                    type="button"
+                    className="item-more-item danger"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMenuOpen(false)
+                      remove(item.id)
+                    }}
+                  >
+                    <TrashIcon width={14} height={14} />
+                    删除
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -326,7 +401,7 @@ function BundleFluidPreview({
               <div className="bundle-actions">
                 <div 
                   className="bundle-collapse-zone" 
-                  title="Collapse collection"
+                  title="收起堆叠"
                   onClick={(e) => { e.stopPropagation(); onCollapse(e); }}
                 >
                   <button className="act bundle-collapse-btn">
@@ -336,15 +411,15 @@ function BundleFluidPreview({
                 <div className="actions-pill">
                   <button
                     className={`act${item.pinned ? ' active' : ''}`}
-                    title={item.pinned ? 'Unpin' : 'Pin'}
+                    title={item.pinned ? '取消固定' : '固定'}
                     onClick={(e) => { e.stopPropagation(); useStore.getState().togglePin(item.id, !item.pinned); }}
                   >
                     {item.pinned ? <PinFillIcon /> : <PinIcon />}
                   </button>
-                  <button className="act" title="Copy all" onClick={(e) => { e.stopPropagation(); onCopy(e); }}>
+                  <button className="act" title="全部复制" onClick={(e) => { e.stopPropagation(); onCopy(e); }}>
                     <CopyIcon />
                   </button>
-                  <button className="act danger" title="Delete bundle" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                  <button className="act danger" title="删除堆叠" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
                     <TrashIcon />
                   </button>
                 </div>
@@ -365,7 +440,7 @@ function BundleFluidPreview({
                   />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
                     <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)' }}>
-                       Image • {img.width} × {img.height}
+                       图片 · {img.width} × {img.height}
                     </span>
                     <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
                       {formatBytes(img.bytes)}
@@ -373,7 +448,7 @@ function BundleFluidPreview({
                   </div>
                   <button
                     className="act subitem-delete-btn"
-                    title="Ungroup image from collection"
+                    title="从堆叠中拆出图片"
                     onClick={(e) => { e.stopPropagation(); window.edge.splitItem({ id: item.id, imageId: img.imageId, splitPlacement: 'after' }); }}
                     style={{ width: 24, height: 24 }}
                   >
@@ -412,7 +487,7 @@ function BundleFluidPreview({
                   )
                 })}
               </div>
-              {more > 0 && <div className="bundle-more-label">+{more} more image{more > 1 ? 's' : ''}</div>}
+              {more > 0 && <div className="bundle-more-label">还有 {more} 张图片</div>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -439,7 +514,7 @@ function BundleFluidPreview({
               <div className="bundle-actions">
                 <div
                   className="bundle-collapse-zone"
-                  title="Collapse collection"
+                  title="收起堆叠"
                   onClick={(e) => { e.stopPropagation(); onCollapse(e); }}
                 >
                   <button className="act bundle-collapse-btn">
@@ -450,10 +525,10 @@ function BundleFluidPreview({
                   {count} / {MAX_STACK}
                 </div>
                 <div className="actions-pill">
-                  <button className="act" title="Copy all" onClick={(e) => { e.stopPropagation(); onCopy(e); }}>
+                  <button className="act" title="全部复制" onClick={(e) => { e.stopPropagation(); onCopy(e); }}>
                     <CopyIcon />
                   </button>
-                  <button className="act danger" title="Delete bundle" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+                  <button className="act danger" title="删除堆叠" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
                     <TrashIcon />
                   </button>
                 </div>
@@ -491,7 +566,7 @@ function BundleFluidPreview({
                     </div>
                     <button
                       className="act subitem-copy-btn"
-                      title="Copy file path"
+                      title="复制文件路径"
                       onClick={(e) => { e.stopPropagation(); window.edge.copySubitem({ id: item.id, paths: [filePath] }); }}
                       style={{ width: 24, height: 24 }}
                     >
@@ -499,7 +574,7 @@ function BundleFluidPreview({
                     </button>
                     <button
                       className="act subitem-delete-btn"
-                      title="Ungroup file from collection"
+                      title="从堆叠中拆出文件"
                       onClick={(e) => { e.stopPropagation(); window.edge.splitItem({ id: item.id, paths: [filePath], splitPlacement: 'after' }); }}
                       style={{ width: 24, height: 24 }}
                     >
@@ -552,9 +627,9 @@ function BundleFluidPreview({
                 })}
               </div>
               {count > 1 ? (
-                <div className="bundle-more-label">+{count - 1} more file{count - 1 > 1 ? 's' : ''}</div>
+                <div className="bundle-more-label">还有 {count - 1} 个文件</div>
               ) : (
-                <div className="bundle-more-label">1 file</div>
+                <div className="bundle-more-label">1 个文件</div>
               )}
             </motion.div>
           )}
@@ -592,7 +667,7 @@ function Preview({ item }: { item: ClipboardItemDto }) {
               draggable={false}
             />
           ) : (
-            <div className="preview">[image]</div>
+            <div className="preview">[图片]</div>
           )}
         </div>
       )
@@ -648,21 +723,21 @@ function KindBadge({ item }: { item: ClipboardItemDto }) {
       if (item.data.isUrl)
         return (
           <span className="kind-badge url">
-            <LinkIcon width={11} height={11} /> link
+            <LinkIcon width={11} height={11} /> 链接
           </span>
         )
-      return <span className="kind-badge">text</span>
+      return <span className="kind-badge">文本</span>
     case 'image':
       return (
         <span className="kind-badge">
-          <ImageIcon width={11} height={11} /> image
+          <ImageIcon width={11} height={11} /> 图片
         </span>
       )
     case 'image-collection':
       return (
         <span className="kind-badge">
           <ImageIcon width={11} height={11} />
-          {item.data.images.length} images
+          {item.data.images.length} 张图片
         </span>
       )
     case 'files': {
@@ -670,7 +745,7 @@ function KindBadge({ item }: { item: ClipboardItemDto }) {
       const info = getFileKind(firstPath)
       const count = item.data.paths.length
       // For a single file, label by its type (e.g. "pdf"); for a bundle, "N files".
-      const label = count > 1 ? `${count} files` : info.label.toLowerCase()
+      const label = count > 1 ? `${count} 个文件` : info.label.toLowerCase()
       return (
         <span className="kind-badge" style={{ color: count > 1 ? undefined : info.color }}>
           <FileKindIcon path={firstPath} width={11} height={11} />

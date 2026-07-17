@@ -5,63 +5,103 @@
 <h1 align="center">Edge-Drop</h1>
 
 <p align="center">
-  <strong>A zero-click, hover-activated clipboard shelf and native OS file-transfer hub for the desktop.</strong><br/>
-  Lives invisibly on the left edge of your screen. Approach it, and it opens. Drag anything out — into Photoshop, Word, Slack, Explorer, anywhere.
+  <strong>一个零点击、悬停即激活的剪贴板侧边栏，桌面端原生 OS 文件传输枢纽。</strong><br/>
+  隐身驻留在屏幕边缘。鼠标靠近即展开，把任何东西拖出去——拖进 Photoshop、Word、Slack、资源管理器，任何地方。
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#demos">Demos</a> ·
-  <a href="#how-it-works">How It Works</a> ·
-  <a href="#architecture">Architecture</a> ·
-  <a href="#security">Security</a> ·
-  <a href="#roadmap">Roadmap</a> ·
-  <a href="#contributing">Contributing</a>
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#演示">演示</a> ·
+  <a href="#工作原理">工作原理</a> ·
+  <a href="#架构">架构</a> ·
+  <a href="#安全">安全</a> ·
+  <a href="#本 fork 的改动">本 Fork 的改动</a> ·
+  <a href="#路线图">路线图</a> ·
+  <a href="#贡献">贡献</a>
 </p>
 
 <p align="center">
-  <sub>Built with Electron · React · TypeScript · Framer Motion · Zustand</sub><br/>
-  <sub>License: Apache-2.0 &nbsp;·&nbsp; Status: Public Beta</sub>
+  <sub>基于 Electron · React · TypeScript · Framer Motion · Zustand 构建</sub><br/>
+  <sub>许可证：Apache-2.0 &nbsp;·&nbsp; 状态：公开测试版</sub>
 </p>
 
 ---
 
-## Why
+## 关于本 Fork
 
-Every clipboard manager on the market breaks your flow. You copy something, switch apps, paste, then hunt through `Win+V` history with arrow keys or dig into a tray menu. Multi-step. Modal. Slow.
+本仓库 fork 自原项目 [Deepender25/Edge-Drop](https://github.com/Deepender25/Edge-Drop.git)，在原版基础上做了以下改动：
 
-**Edge-Drop removes the friction.** It anchors to the leftmost pixel of your monitor as a transparent, always-on-top, click-through surface. When your cursor approaches the edge, the shelf springs open. Drag images, file stacks, rich text, and HTML bundles *out* of it — directly into whatever desktop app you're already using. No shortcuts. No window switching. No modal dialogs.
+### 1. 中文汉化
+将所有面向用户的文案翻译为简体中文，包括：
+- 设置页全部选项（重启清除、自动删除、历史容量、边缘触发、面板高度、无痕模式、开机自启等）
+- 新手引导（Onboarding）7 页流程与快捷提示
+- 托盘菜单、首次启动通知
+- 卡片操作 tooltip（固定 / 复制 / 删除 / 拆分 / 复制文件路径等）
+- 类型标签（文本 / 图片 / 链接 / 文件 / 压缩包 / 代码 等）
+- 相对时间（刚刚、3 分钟前、2 小时前…）
+- 合并 / 拆分 Toast 提示与失败原因
+- `index.html` 的 `lang` 改为 `zh-CN`
 
-It is built for the developer and creative workflow where you constantly juggle screenshots, code snippets, file paths, design assets, and reference links between many windows at once.
+> 保留英文的部分：产品名 Edge-Drop、通用文件类型名（PDF / Word / Excel）、系统快捷键（Alt+C / Ctrl+C）。
+
+### 2. 多屏适配（第一阶段）
+原版面板固定贴在主屏左缘，双屏时在屏幕接缝处会触发错位。本 fork 新增「显示位置」设置：
+- 在设置页可选择面板贴靠的**显示器**与**外边缘**（左 / 右）
+- **自动排除屏幕接缝**——双屏左右排列时，左屏右缘、右屏左缘不会出现在选项里，避免接缝误触
+- 窗口几何与光标边缘检测统一基于所选显示器，修改设置后立即重定位
+- 支持右边缘锚定（面板圆角、flare 装饰、拆分堆叠发光条均已镜像适配）
+
+> 路线图中的「Multi-monitor support」对应本项。第二阶段（上 / 下边缘 + 横向面板布局）尚未实现。
+
+### 3. 字体清晰度修复
+针对 Electron 透明窗口在 Windows 显示缩放下文字发糊的问题：
+- 启动参数加入 `force-device-scale-factor=1` 与 `high-dpi-support`
+- 面板打开静止态 `filter` 由 `blur(0px)` 改为 `none`，避免静止态被强制留在 1x 光栅化合成层
+
+### 4. 局域网传到手机
+在剪贴板侧边栏上增加扫码传文件能力（无需手机 App）：
+- 单条：卡片菜单「发送到手机」→ 二维码 → 手机浏览器下载
+- 批量：暂存箱攒文件后统一生成二维码；支持拖入、放入当前剪贴板
+- 本机 HTTP 服务（默认端口 7331 起探测），同一 Wi-Fi 即可访问
 
 ---
 
-## Demos
+## 为什么做这个
 
-> All demos are silent autoplay loops. Hover to scrub, right-click → open in new tab for full size.
+市面上的剪贴板管理器都在打断你的流程：复制、切应用、粘贴，然后用方向键在 `Win+V` 历史里翻找，或钻进托盘菜单。多步、模态、慢。
+
+**Edge-Drop 消除了这些摩擦。** 它以透明、置顶、点击穿透的形式锚定在显示器边缘像素上。光标靠近边缘，侧边栏即弹出。把图片、文件堆、富文本、HTML 包从里面*拖出去*——直接拖进你正在用的任何桌面应用。无需快捷键、无需切窗口、无需模态对话框。
+
+它为开发者和创意工作流而生：你总要在多个窗口间频繁切换截图、代码片段、文件路径、设计素材和参考链接。
+
+---
+
+## 演示
+
+> 所有演示均为静音自动循环。悬停可拖动进度条，右键 → 在新标签页打开查看原图。
 
 <table>
   <tr>
-    <td width="50%" align="center"><b>1. Welcome to Edge-Drop</b><br/><br/>
+    <td width="50%" align="center"><b>1. 欢迎使用 Edge-Drop</b><br/><br/>
       <video src="https://github.com/user-attachments/assets/118d59cc-9821-4da1-9424-ea9bc1b6e548" width="100%" autoplay loop muted playsinline></video>
     </td>
-    <td width="50%" align="center"><b>2. Collect Anything</b><br/><br/>
+    <td width="50%" align="center"><b>2. 收集任意内容</b><br/><br/>
       <video src="https://github.com/user-attachments/assets/8daa18a7-d023-4e93-9f17-c30791a7c41c" width="100%" autoplay loop muted playsinline></video>
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center"><b>3. Drag & Drop Anywhere</b><br/><br/>
+    <td width="50%" align="center"><b>3. 拖放到任意位置</b><br/><br/>
       <video src="https://github.com/user-attachments/assets/ac8bc411-0827-460c-828c-0799f4cee4d8" width="100%" autoplay loop muted playsinline></video>
     </td>
-    <td width="50%" align="center"><b>4. Explore File Stacks</b><br/><br/>
+    <td width="50%" align="center"><b>4. 探索文件堆叠</b><br/><br/>
       <video src="https://github.com/user-attachments/assets/b1e47a2b-41d2-4958-8e42-4fefcaa8b26b" width="100%" autoplay loop muted playsinline></video>
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center"><b>5. Ungroup & Split Stacks</b><br/><br/>
+    <td width="50%" align="center"><b>5. 拆分堆叠</b><br/><br/>
       <video src="https://github.com/user-attachments/assets/e41eb9f8-62b0-4525-a28a-2bacafd0bb8c" width="100%" autoplay loop muted playsinline></video>
     </td>
-    <td width="50%" align="center"><b>6. Combine & Merge Items</b><br/><br/>
+    <td width="50%" align="center"><b>6. 合并项目</b><br/><br/>
       <video src="https://github.com/user-attachments/assets/cee7d5f7-658b-433a-9fa0-6592a5a75fa4" width="100%" autoplay loop muted playsinline></video>
     </td>
   </tr>
@@ -69,96 +109,96 @@ It is built for the developer and creative workflow where you constantly juggle 
 
 ---
 
-## Quick Start
+## 快速开始
 
-### Prerequisites
-- **Node.js** v18 or higher
-- **OS**: Windows 10/11 (uses Win32 OLE drag pipelines and transparent-window cursor polling)
+### 前置要求
+- **Node.js** v18 或更高
+- **操作系统**：Windows 10/11（使用 Win32 OLE 拖拽管线与透明窗口光标轮询）
 
-### Run from source
+### 从源码运行
 ```bash
 git clone https://github.com/Deepender25/Edge-Drop.git
 cd Edge-Drop
 npm install
-npm run dev          # launches Electron + Vite HMR
+npm run dev          # 启动 Electron + Vite HMR
 ```
 
-### Type-check
+### 类型检查
 ```bash
-npm run typecheck    # runs tsc --noEmit against both node and web configs
+npm run typecheck    # 对 node 与 web 两套配置运行 tsc --noEmit
 ```
 
-### Build a Windows installer
+### 构建 Windows 安装包
 ```bash
-npm run package      # outputs an NSIS .exe to /dist
+npm run package      # 输出 NSIS .exe 到 /dist
 ```
 
 > [!NOTE]
-> On Windows, if packaging fails with `EBUSY: resource busy or locked`, close any running Edge-Drop instances first: `taskkill /F /IM electron.exe /T`.
+> 在 Windows 上，若打包时报 `EBUSY: resource busy or locked`，请先关闭所有运行中的 Edge-Drop 实例：`taskkill /F /IM electron.exe /T`。
 
 ---
 
-## How It Works
+## 工作原理
 
-Edge-Drop is an Electron app split into three strictly isolated processes — **Main** (Node.js, OS access), **Preload** (typed sandbox bridge), and **Renderer** (React UI). They communicate over a fully typed IPC contract. No string channel names, no `any` payloads.
+Edge-Drop 是一个 Electron 应用，分为三个严格隔离的进程——**Main**（Node.js，访问 OS）、**Preload**（类型化沙箱桥）、**Renderer**（React UI）。它们通过完全类型化的 IPC 契约通信，没有字符串通道名，没有 `any` 载荷。
 
-### The invisible edge trigger
+### 不可见的边缘触发
 
-The shelf stays hidden as a frameless, transparent, click-through `BrowserWindow` anchored at `x=0`. When collapsed, **all mouse events pass through to the apps beneath it** — your desktop is 100% usable. Detection happens in the Main process via a 16ms `screen.getCursorScreenPoint()` poll, because Windows transparent windows silently drop `pointermove` forwarding.
+侧边栏以无边框、透明、点击穿透的 `BrowserWindow` 形式隐藏在屏幕边缘。收起时，**所有鼠标事件穿透到下方应用**——桌面 100% 可用。检测在 Main 进程通过 16ms 一次的 `screen.getCursorScreenPoint()` 轮询完成，因为 Windows 透明窗口会静默丢弃 `pointermove` 转发。
 
-A **dead-band hysteresis state machine** prevents the shelf from flickering open/closed when your cursor hovers near its boundary:
+一个**死区滞回状态机**防止光标在边界附近悬停时侧边栏闪烁开合：
 
-| Threshold | Value | Meaning |
+| 阈值 | 数值 | 含义 |
 |---|---|---|
-| Trigger Zone | `x ≤ 3px` | A 3-pixel strip on the left edge starts a 120ms dwell timer |
-| Keep-Open | `x ≤ 255px` | Cursor clearly inside the blade → cancel any close timer |
-| Dead Band | `255px < x ≤ 290px` | Micro-tremors here are ignored — no action |
-| Start-Close | `x > 290px` | Cursor clearly outside → 250ms grace timer begins |
+| 触发区 | `x ≤ 3px` | 边缘 3 像素条启动 120ms 停留计时 |
+| 保持打开 | `x ≤ 255px` | 光标明显在面板内 → 取消任何关闭计时 |
+| 死区 | `255px < x ≤ 290px` | 此处微抖动被忽略——不动作 |
+| 开始关闭 | `x > 290px` | 光标明显在外 → 启动 250ms 宽限计时 |
 
-This is the kind of detail that separates a "looks nice" demo from a tool you can actually live with.
+正是这种细节，把一个「看着不错」的演示和一个你真能长期用的工具区分开来。
 
-### Multi-format clipboard engine
+### 多格式剪贴板引擎
 
-The `ClipboardWatcher` polls the OS clipboard every 600ms. To detect *change* without re-encoding images on every tick, it computes a cheap content signature:
+`ClipboardWatcher` 每 600ms 轮询一次系统剪贴板。为在不每次重新编码图片的前提下检测*变化*，它计算一个轻量的内容签名：
 
-- **Files** → joined path list
-- **Text** → the text itself
-- **Images** → an **FNV-1a hash over ~400 sampled bytes of the raw BGRA bitmap** (dimensions + hash)
+- **文件** → 拼接路径列表
+- **文本** → 文本本身
+- **图片** → 对原始 BGRA 位图**约 400 个采样字节的 FNV-1a 哈希**（尺寸 + 哈希）
 
-The previous naive approach of comparing `toPNG().length` was both expensive (re-encoded the whole image each tick) and broken (two different 1920×1080 screenshots of similar complexity produced identical byte counts → the second was silently dropped). The FNV-1a sampler is O(400) regardless of image size and has astronomically low collision probability.
+此前比较 `toPNG().length` 的朴素做法既昂贵（每次都重新编码整张图）又不可靠（两张复杂度相近的不同 1920×1080 截图可能产生相同字节数 → 第二张被静默丢弃）。FNV-1a 采样与图片大小无关，复杂度 O(400)，碰撞概率极低。
 
-It also **respects privacy flags**. Clipboard formats from password managers and dictation tools — `ExcludeClipboardContentFromMonitorProcessing`, `ClipboardViewerIgnore`, `CanIncludeInClipboardHistory=0`, `KeePassClipFormat`, `com.bitwarden.concealed`, etc. — are matched case-insensitively and skipped entirely.
+它还**尊重隐私标志**。来自密码管理器和听写工具的剪贴板格式——`ExcludeClipboardContentFromMonitorProcessing`、`ClipboardViewerIgnore`、`CanIncludeInClipboardHistory=0`、`KeePassClipFormat`、`com.bitwarden.concealed` 等——以大小写不敏感方式匹配并完全跳过。
 
-### Native OS drag-out (OLE)
+### 原生 OS 拖出（OLE）
 
-Standard HTML5 drag events cannot hand file handles to external desktop software. Edge-Drop intercepts the renderer's `dragstart`, sends a fire-and-forget IPC (`item:start-drag`) to the Main process, which stages the item's content as a temp file and calls `webContents.startDrag({ file, icon })`. The OS then renders a native drag ghost and handles the drop into Photoshop, Word, Explorer, or any other app — exactly as if you had dragged the file from Explorer itself.
+标准 HTML5 拖拽事件无法把文件句柄交给外部桌面软件。Edge-Drop 拦截 renderer 的 `dragstart`，向 Main 进程发送即发即忘的 IPC（`item:start-drag`），Main 将内容暂存为临时文件并调用 `webContents.startDrag({ file, icon })`。OS 随后渲染原生拖拽幽灵并处理拖入 Photoshop、Word、资源管理器或任何其他应用的放置——就像你从资源管理器拖出文件一样。
 
-Custom drag icons are generated on the fly: stacked card PNGs for file bundles (with a count badge), glassmorphic quote cards for text, real image thumbnails for images. Rendered via `@resvg/resvg-js`, cached, and pre-warmed on startup so the first drag is instant.
+自定义拖拽图标即时生成：文件包用带数量徽章的堆叠卡片 PNG，文本用毛玻璃引言卡，图片用真实缩略图。通过 `@resvg/resvg-js` 渲染、缓存，并在启动时预热，确保首次拖拽即用。
 
-### Smart deduplication, stacks, and merging
+### 智能去重、堆叠与合并
 
-When you re-copy existing content, Edge-Drop doesn't add a duplicate — it bumps the item to position 0, increments its `hitCount` badge, and refreshes its timestamp. Multi-file drag-ins and multi-image copies auto-group into expandable 3D card stacks (max 10 per stack). Drag any item card over another to merge them into a bundle; double-click to expand and drag a sub-item to the left edge to split it back out.
+当你重复复制已有内容时，Edge-Drop 不会添加副本——而是把该项提升到第 0 位、增加其 `hitCount` 徽章并刷新时间戳。多文件拖入和多图片复制自动分组成可展开的 3D 卡片堆叠（每堆最多 10 个）。把任意卡片拖到另一张上即可合并为包；双击展开，把子项拖到屏幕边缘即可拆分回独立卡片。
 
 ---
 
-## Architecture
+## 架构
 
 ```mermaid
 graph TD
-    subgraph OS ["Operating System"]
-        WinClip["Win32 System Clipboard"]
-        WinFS["Local Filesystem / AppData"]
-        OLE["OS OLE Drag & Drop Pipeline"]
+    subgraph OS ["操作系统"]
+        WinClip["Win32 系统剪贴板"]
+        WinFS["本地文件系统 / AppData"]
+        OLE["OS OLE 拖拽管线"]
     end
 
-    subgraph Main ["Electron Main Process (Node.js)"]
-        ClipWatch["ClipboardWatcher — 600ms poll, FNV-1a signatures"]
-        Store["ItemStore — atomic JSON + per-image PNG files"]
-        Tray["System Tray & Native Menu"]
-        WinMgr["BrowserWindow + 16ms Cursor Edge Poller"]
+    subgraph Main ["Electron Main 进程 (Node.js)"]
+        ClipWatch["ClipboardWatcher — 600ms 轮询, FNV-1a 签名"]
+        Store["ItemStore — 原子 JSON + 每图 PNG 文件"]
+        Tray["系统托盘 & 原生菜单"]
+        WinMgr["BrowserWindow + 16ms 光标边缘轮询"]
     end
 
-    subgraph Bridge ["Typed Preload Bridge (contextIsolation)"]
+    subgraph Bridge ["类型化 Preload 桥 (contextIsolation)"]
         API["contextBridge → window.edge"]
     end
 
@@ -168,219 +208,230 @@ graph TD
         UI["Panel · ItemList · Fluid Bundles"]
     end
 
-    WinClip <-->|"polls every 600ms"| ClipWatch
+    WinClip <-->|"每 600ms 轮询"| ClipWatch
     ClipWatch -->|"state:items IPC"| API
-    Store <-->|"atomic JSON read/write"| WinFS
+    Store <-->|"原子 JSON 读写"| WinFS
     WinMgr <-->|"window:cursor-edge · window:set-interactive"| API
     UI -->|"item:start-drag IPC"| API
-    API -->|"OLE native handle"| OLE
-    API <-->|"typed handlers & events"| Zustand
+    API -->|"OLE 原生句柄"| OLE
+    API <-->|"类型化处理与事件"| Zustand
     Zustand <--> UI
 ```
 
-### Edge-trigger state machine
+### 边缘触发状态机
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Closed: startup, x=0, click-through
+    [*] --> Closed: 启动, x=0, 点击穿透
     state Closed {
         [*] --> PollingEdge
-        PollingEdge --> TriggerZone: cursor x ≤ 3px in hot zone
-        TriggerZone --> DwellTimer: linger ≥ 120ms
+        PollingEdge --> TriggerZone: 光标 x ≤ 3px 进入热区
+        TriggerZone --> DwellTimer: 停留 ≥ 120ms
     }
     state Open {
         [*] --> Interactive: setInteractive(true)
-        Interactive --> HysteresisCheck: 16ms main poll
-        HysteresisCheck --> Interactive: x ≤ 255px (inside blade)
-        HysteresisCheck --> GraceTimer: x > 290px OR left y-bounds
-        GraceTimer --> Interactive: cursor returns within 250ms
+        Interactive --> HysteresisCheck: 16ms 主进程轮询
+        HysteresisCheck --> Interactive: x ≤ 255px (面板内)
+        HysteresisCheck --> GraceTimer: x > 290px 或 离开 y 范围
+        GraceTimer --> Interactive: 250ms 内光标返回
     }
-    Closed --> Open: dwell timer expires
-    Open --> Closed: grace timer expires
+    Closed --> Open: 停留计时结束
+    Open --> Closed: 宽限计时结束
 ```
 
-### Clipboard capture & dedup pipeline
+### 剪贴板捕获与去重管线
 
 ```mermaid
 sequenceDiagram
-    participant OS as System Clipboard
+    participant OS as 系统剪贴板
     participant CW as ClipboardWatcher
-    participant IS as ItemStore (disk)
+    participant IS as ItemStore (磁盘)
     participant R as React UI
-    loop Every 600ms
-        CW->>OS: read available formats
-        alt Files (Win32 HDROP / FileNameW)
-            CW->>OS: PowerShell GetFileDropList (bypasses single-file limit)
-        else Image
-            CW->>OS: clipboard.readImage → raw BGRA
-            CW->>CW: FNV-1a hash over ~400 sampled bytes
-        else Text / URL / HTML
+    loop 每 600ms
+        CW->>OS: 读取可用格式
+        alt 文件 (Win32 HDROP / FileNameW)
+            CW->>OS: PowerShell GetFileDropList (绕过单文件限制)
+        else 图片
+            CW->>OS: clipboard.readImage → 原始 BGRA
+            CW->>CW: 对约 400 采样字节做 FNV-1a 哈希
+        else 文本 / URL / HTML
             CW->>OS: clipboard.readText / readHTML
         end
-        CW->>IS: lookup signature
-        alt Duplicate
-            IS->>IS: bump hitCount, move to front, update timestamp
-        else New
-            IS->>IS: prepend, enforce historyLimit, evict oldest unpinned
+        CW->>IS: 查询签名
+        alt 重复
+            IS->>IS: 增加 hitCount, 移至顶部, 更新时间戳
+        else 新增
+            IS->>IS: 前插, 执行 historyLimit, 淘汰最旧未固定项
         end
-        IS-->>R: broadcast state:items
+        IS-->>R: 广播 state:items
     end
 ```
 
-### Native drag-out flow
+### 原生拖出流程
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant R as React Card
+    participant U as 用户
+    participant R as React 卡片
     participant M as Electron Main
-    participant OS as OS / External App
-    Note over U,OS: Drag OUT — native OLE
-    U->>R: dragstart on item tile
-    R->>R: preventDefault (kill HTML5 ghost)
-    R->>M: send item:start-drag (fire & forget)
-    M->>M: stage content → temp file (.png / .txt / real paths)
+    participant OS as OS / 外部应用
+    Note over U,OS: 拖出 — 原生 OLE
+    U->>R: 在卡片上 dragstart
+    R->>R: preventDefault (消除 HTML5 幽灵)
+    R->>M: 发送 item:start-drag (即发即忘)
+    M->>M: 暂存内容 → 临时文件 (.png / .txt / 真实路径)
     M->>OS: webContents.startDrag({ file, icon })
-    OS->>U: native drag ghost → drop anywhere
-    Note over U,OS: Drag IN — file drop
-    U->>R: drag files onto panel edge
+    OS->>U: 原生拖拽幽灵 → 拖到任意位置
+    Note over U,OS: 拖入 — 文件放置
+    U->>R: 把文件拖到面板边缘
     R->>M: webUtils.getPathForFile
-    M->>M: validate paths, create bundle, broadcast
+    M->>M: 校验路径, 创建包, 广播
 ```
 
 ---
 
-## Features
+## 功能特性
 
-**Zero-click edge hover**
-- Frameless, transparent, always-on-top `BrowserWindow` anchored at `x=0`
-- 100% click-through when collapsed — desktop stays fully usable
-- 16ms Main-process cursor poll (bypasses broken Windows transparent-window `pointermove` forwarding)
-- Configurable hot-zone height (25% / 40% / 60% of screen) and blade height (40% – 100%)
+**零点击边缘悬停**
+- 无边框、透明、置顶的 `BrowserWindow` 锚定在屏幕边缘
+- 收起时 100% 点击穿透——桌面完全可用
+- 16ms Main 进程光标轮询（绕过 Windows 透明窗口失效的 `pointermove` 转发）
+- 可配置热区高度（屏幕的 25% / 40% / 60%）与面板高度（40% – 100%）
 
-**Multi-format clipboard engine**
-- Captures plain text, URLs, rich HTML, raw images, and multi-file selections
-- Win32 `FileNameW` / HDROP parsing via PowerShell to bypass Electron's single-file limit
-- Respects password-manager and dictation-tool privacy flags (case-insensitive matching)
-- Smart deduplication — re-copies bump `hitCount` and move the item to the top
-- Incognito mode — one click suspends polling for sensitive data
+**多格式剪贴板引擎**
+- 捕获纯文本、URL、富 HTML、原始图片、多文件选择
+- 通过 PowerShell 解析 Win32 `FileNameW` / HDROP，绕过 Electron 单文件限制
+- 尊重密码管理器与听写工具的隐私标志（大小写不敏感匹配）
+- 智能去重——重复复制增加 `hitCount` 并移至顶部
+- 无痕模式——一键暂停对敏感数据的轮询
 
-**Native OS drag & drop**
-- `webContents.startDrag()` hands real file handles to external apps
-- Custom drag icons: stacked card PNGs with count badges, glassmorphic text cards, real image thumbnails
-- Drag-in: drop files onto the shelf to add them; drag-out: drop anywhere — Photoshop, Word, Explorer, Slack
-- Pre-warmed icon cache so the first drag is instant
+**原生 OS 拖拽**
+- `webContents.startDrag()` 把真实文件句柄交给外部应用
+- 自定义拖拽图标：带数量徽章的堆叠卡片 PNG、毛玻璃文本卡、真实图片缩略图
+- 拖入：把文件拖到侧边栏即可添加；拖出：拖到任意位置——Photoshop、Word、资源管理器、Slack
+- 预热图标缓存，首次拖拽即用
 
-**Fluid collections & stacks**
-- Auto-group multi-file drag-ins and multi-image copies into 3D card stacks (max 10)
-- Drag a card over another card to merge them into a bundle
-- Double-click to expand, drag a sub-item to the left edge to split it back out
-- Type-safe merge rules: images only merge with images, files with files (text never groups)
+**流式集合与堆叠**
+- 多文件拖入与多图片复制自动分组为 3D 卡片堆叠（最多 10 个）
+- 把卡片拖到另一张上即可合并为包
+- 双击展开，把子项拖到屏幕边缘即可拆分回独立卡片
+- 类型安全的合并规则：图片只与图片合并，文件只与文件合并（文本永不分组）
 
 **UI / UX**
-- Frosted-glass macOS aesthetic — deep black, `backdrop-filter: blur(20px)`, hairline borders
-- Framer Motion spring physics with synchronized elastic overshoot on open
-- Custom SVG connection flares that scale with the blade
-- Scroll gradient masks top & bottom to fade items into black
-- Monochrome pin / multiplier badges for maximum legibility
-- Reduce-motion setting for accessibility
+- 毛玻璃 macOS 美学——深黑、`backdrop-filter: blur(20px)`、发丝边框
+- Framer Motion 弹簧物理，打开时同步弹性过冲
+- 自定义 SVG 连接 flare，随面板缩放
+- 上下滚动渐变遮罩，让条目淡入黑色
+- 单色固定 / 倍数徽章，最大可读性
+- 无障碍的减少动效设置
+
+**局域网传到手机（本 Fork）**
+- 卡片「⋯」→「发送到手机」即时生成二维码；「加入暂存箱」攒批量内容
+- Header 手机图标打开暂存箱浮层；打开时可直接拖入文件
+- 手机扫码用浏览器下载（单文件直下 / 多文件列表 + ZIP / 文本可复制）
+- 二维码约 30 分钟有效，关闭弹层即作废；多网卡时可切换局域网 IP
+- 无需安装手机 App，电脑与手机需在同一 Wi-Fi
 
 ---
 
-## Security
+## 安全
 
-Edge-Drop touches the OS clipboard, the filesystem, and the Win32 OLE drag pipeline — so the security posture is intentional, not optional.
+Edge-Drop 接触系统剪贴板、文件系统和 Win32 OLE 拖拽管线——所以安全姿态是有意为之，而非可选。
 
-| Control | Implementation |
+| 控制 | 实现 |
 |---|---|
-| Process isolation | `contextIsolation: true` · `nodeIntegration: false` · `sandbox: true` on both windows |
-| Typed IPC | `shared/ipc.ts` defines `InvokeMap`, `EventMap`, `SendMap` — channel names and payload types are statically checked on both sides |
-| Privacy-aware clipboard | Honors `ExcludeClipboardContentFromMonitorProcessing`, `ClipboardViewerIgnore`, `CanIncludeInClipboardHistory`, `CanUploadToCloudClipboard`, plus 1Password / Bitwarden / KeePass concealed formats |
-| Atomic persistence | JSON index written via temp-file + rename; image bytes stored as per-id PNG files |
-| Dev-safe startup | `app.setLoginItemSettings` is gated by `app.isPackaged` — dev builds never touch the Windows Registry |
-| External links | `setWindowOpenHandler` forces all window-open requests to `shell.openExternal` — no in-app navigation |
+| 进程隔离 | 两个窗口均 `contextIsolation: true` · `nodeIntegration: false` · `sandbox: true` |
+| 类型化 IPC | `shared/ipc.ts` 定义 `InvokeMap`、`EventMap`、`SendMap`——通道名与载荷类型双向静态检查 |
+| 隐私感知剪贴板 | 遵循 `ExcludeClipboardContentFromMonitorProcessing`、`ClipboardViewerIgnore`、`CanIncludeInClipboardHistory`、`CanUploadToCloudClipboard`，以及 1Password / Bitwarden / KeePass 隐蔽格式 |
+| 原子持久化 | JSON 索引通过临时文件 + 重命名写入；图片字节按 id 存为 PNG 文件 |
+| 开发安全启动 | `app.setLoginItemSettings` 受 `app.isPackaged` 门控——开发构建绝不触碰 Windows 注册表 |
+| 外部链接 | `setWindowOpenHandler` 强制所有 window-open 请求走 `shell.openExternal`——无应用内导航 |
 
 ---
 
-## Tech Stack
+## 技术栈
 
-| Layer | Choice | Why |
+| 层 | 选择 | 原因 |
 |---|---|---|
-| Desktop runtime | **Electron 30+** | Only way to access Win32 OLE drag pipelines and native clipboard formats from JS |
-| Build tooling | **electron-vite** | Separate Main / Preload / Renderer builds with Vite HMR |
-| UI | **React 18 + TypeScript** | Strongly typed component hierarchy |
-| Animation | **Framer Motion** | Spring physics, layout transitions, gesture animations |
-| State | **Zustand** | Selector-optimized, zero cascading re-renders during drags |
-| Drag icons | **@resvg/resvg-js** | Server-side SVG → PNG rendering for custom drag ghosts |
+| 桌面运行时 | **Electron 30+** | 从 JS 访问 Win32 OLE 拖拽管线与原生剪贴板格式的唯一方式 |
+| 构建工具 | **electron-vite** | Main / Preload / Renderer 分离构建，带 Vite HMR |
+| UI | **React 18 + TypeScript** | 强类型组件层级 |
+| 动画 | **Framer Motion** | 弹簧物理、布局过渡、手势动画 |
+| 状态 | **Zustand** | 选择器优化，拖拽期间零级联重渲染 |
+| 拖拽图标 | **@resvg/resvg-js** | 服务端 SVG → PNG 渲染，用于自定义拖拽幽灵 |
 
 ---
 
-## Project Structure
+## 项目结构
 
 ```
 Edge-Drop/
-├─ shared/                 Typed IPC contracts & domain models
-│  ├─ types.ts             ClipboardItem, Bundle, Settings, DragRequest DTOs
-│  └─ ipc.ts               InvokeMap / EventMap / SendMap channel definitions
-├─ electron/               Node.js backend & OS integrations
+├─ shared/                 类型化 IPC 契约与领域模型
+│  ├─ types.ts             ClipboardItem, Bundle, Settings, DragRequest DTO
+│  └─ ipc.ts               InvokeMap / EventMap / SendMap 通道定义
+├─ electron/               Node.js 后端与 OS 集成
 │  ├─ main/
-│  │  ├─ index.ts          Single-instance lock, IPC registration, startup
-│  │  ├─ window.ts         Frameless window, setIgnoreMouseEvents, cursor poll
-│  │  ├─ tray.ts           System tray icon & context menus
-│  │  └─ drag.ts           OLE startDrag, temp-file staging, icon generation
-│  ├─ preload/             Sandbox bridge exposing window.edge
+│  │  ├─ index.ts          单例锁, IPC 注册, 启动
+│  │  ├─ window.ts         无边框窗口, setIgnoreMouseEvents, 光标轮询
+│  │  ├─ displays.ts       多屏锚点：显示器枚举、接缝过滤、bounds 计算 [本 fork 新增]
+│  │  ├─ tray.ts           系统托盘图标与右键菜单
+│  │  └─ drag.ts           OLE startDrag, 临时文件暂存, 图标生成
+│  ├─ preload/             暴露 window.edge 的沙箱桥
 │  ├─ clipboard/
-│  │  ├─ ClipboardWatcher.ts   600ms poll loop, transient-copy rejection
-│  │  └─ formats.ts        FNV-1a signatures, Win32 HDROP, privacy-flag detection
+│  │  ├─ ClipboardWatcher.ts   600ms 轮询循环, 瞬态复制拒绝
+│  │  └─ formats.ts        FNV-1a 签名, Win32 HDROP, 隐私标志检测
 │  └─ store/
-│     ├─ ItemStore.ts      Atomic JSON persistence, dedup, merge/split logic
-│     ├─ settings.ts       User config & startup registration
-│     └─ paths.ts          AppData + temp directory resolution
+│     ├─ ItemStore.ts      原子 JSON 持久化, 去重, 合并/拆分逻辑
+│     ├─ settings.ts       用户配置与启动注册
+│     └─ paths.ts          AppData + 临时目录解析
 ├─ src/                    React renderer
 │  ├─ components/          Panel, ItemList, ClipboardItem, SearchBar, Settings, Icons
-│  ├─ hooks/               useEdgeHover (hysteresis), useDragOut, useFilteredItems
+│  ├─ hooks/               useEdgeHover (滞回), useDragOut, useFilteredItems
 │  ├─ store/               Zustand appStore
-│  ├─ lib/                 Theme tokens, format helpers, file-type detection
+│  ├─ lib/                 主题 token, 格式化助手, 文件类型检测
 │  └─ styles/              tokens.css, panel.css, settings.css, item.css, global.css
 ```
 
 ---
 
-## Roadmap
+## 路线图
 
-Edge-Drop is in **public beta**. The following are planned, in rough priority order:
+Edge-Drop 处于**公开测试版**。以下为计划项，按大致优先级排列：
 
-- [ ] **AI semantic self-organization** — embed text/URL/HTML items, auto-cluster into named groups, replace manual pinning
-- [ ] **AI summarization** — condense multi-file bundles and long HTML copies into one-line summaries + tags
-- [ ] **Multi-monitor support** — anchor to any display edge, not just primary
-- [ ] **Linux port** — replace Win32-specific paths with cross-platform equivalents
-- [ ] **Plugin SDK** — let users write custom format readers and drag-out targets
-- [ ] **Cloud sync (opt-in, E2E encrypted)** — sync pinned items across machines
-- [ ] **Search across full history** — currently capped at `historyLimit` (default 500)
+- [x] **多屏支持（第一阶段）** — 锚定到任意显示器的左/右外边缘，自动排除接缝 [本 fork 已完成]
+- [ ] **多屏支持（第二阶段）** — 上/下边缘 + 横向面板布局
+- [ ] **AI 语义自组织** — 对文本/URL/HTML 项做嵌入，自动聚类为命名分组，替代手动固定
+- [ ] **AI 摘要** — 把多文件包和长 HTML 复制浓缩为一行摘要 + 标签
+- [ ] **Linux 移植** — 用跨平台等价物替换 Win32 专属路径
+- [ ] **插件 SDK** — 让用户编写自定义格式读取器与拖出目标
+- [ ] **云同步（可选, E2E 加密）** — 跨机器同步已固定项
+- [ ] **全历史搜索** — 当前上限为 `historyLimit`（默认 500）
 
-The AI features are the headline roadmap items and the reason this project is applying to OpenAI's **Codex for Open Source** program.
+AI 功能是路线图的头条项，也是本项目申请 OpenAI **Codex for Open Source** 计划的原因。
 
 ---
 
-## Contributing
+## 贡献
 
-Edge-Drop is Apache-2.0 licensed and open to contributions. As a solo-maintained project in active beta, the best ways to help right now are:
+Edge-Drop 基于 Apache-2.0 许可，欢迎贡献。作为活跃测试期单人维护项目，目前最好的帮助方式是：
 
-1. **File issues** for bugs, crashes, or privacy-edge-cases you hit (especially around clipboard format detection on different apps)
-2. **macOS porting** — Currently Edge-Drop only supports Windows; contributions for a macOS port are welcome
-3. **Suggest format readers** — if you copy from an app whose content Edge-Drop mis-categorizes, open an issue with the available formats list (`clipboard.availableFormats()` output)
-4. **Pick up a roadmap item** — open an issue first to discuss scope, then send a PR against a feature branch
+1. **提 issue**——你遇到的 bug、崩溃或隐私边界情况（尤其是不同应用的剪贴板格式检测）
+2. **macOS 移植**——目前 Edge-Drop 仅支持 Windows，欢迎 macOS 移植贡献
+3. **建议格式读取器**——如果你从某应用复制时 Edge-Drop 错误分类了内容，请带上可用格式列表（`clipboard.availableFormats()` 输出）开 issue
+4. **认领路线图项**——先开 issue 讨论范围，再向 feature 分支提 PR
 
-### Development workflow
+### 开发流程
 ```bash
 npm install
 npm run dev          # Electron + Vite HMR
-npm run typecheck    # tsc --noEmit (node + web configs)
-npm run package      # build Windows NSIS installer to /dist
+npm run typecheck    # tsc --noEmit (node + web 配置)
+npm run package      # 构建 Windows NSIS 安装包到 /dist
 ```
 
 ---
 
-## License
+## 许可证
 
-Apache License 2.0 — see [LICENSE](LICENSE). Commercial and non-commercial use, modification, and distribution all permitted with attribution.
+Apache License 2.0——见 [LICENSE](LICENSE)。商业与非商业使用、修改和分发均允许，需保留署名。
+
+> 本 fork 的上游原仓库：https://github.com/Deepender25/Edge-Drop.git

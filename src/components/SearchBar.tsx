@@ -8,14 +8,15 @@ export function SearchBar() {
 
   return (
     <div className="search">
-      <SearchIcon className="search-icon" width={14} height={14} />
+      {/* <SearchIcon className="search-icon" width={14} height={14} />
       <input
         type="text"
-        placeholder="Search clipboard…"
+        placeholder="搜索剪贴板…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         spellCheck={false}
-      />
+      /> */}
+      <div style={{height: '24px', width: '24px'}}></div>
     </div>
   )
 }

@@ -48,8 +48,8 @@ export function createTray(): Tray {
     try {
       if (Notification.isSupported()) {
         new Notification({
-          title: 'Edge-Drop Clipboard Shelf',
-          body: 'Hover against the middle-left screen edge, or press Alt+C to slide open your shelf.',
+          title: 'Edge-Drop 剪贴板侧边栏',
+          body: '将鼠标移到屏幕左边缘悬停，或按 Alt+C 打开剪贴板面板。',
           icon: PATHS.icon()
         }).show()
       }
@@ -60,7 +60,7 @@ export function createTray(): Tray {
     const settings = loadSettings()
     const menu = Menu.buildFromTemplate([
       {
-        label: 'Show Clipboard',
+        label: '显示剪贴板',
         click: () => {
           console.log('[Main] Context menu "Show Clipboard" clicked')
           setVisible(true)
@@ -69,7 +69,7 @@ export function createTray(): Tray {
         }
       },
       {
-        label: 'Settings',
+        label: '设置',
         click: () => {
           console.log('[Main] Context menu "Settings" clicked')
           setVisible(true)
@@ -79,7 +79,7 @@ export function createTray(): Tray {
       },
       { type: 'separator' },
       {
-        label: 'Incognito (pause capture)',
+        label: '无痕模式（暂停捕获）',
         type: 'checkbox',
         checked: settings.incognito,
         click: (item) => {
@@ -90,7 +90,7 @@ export function createTray(): Tray {
       },
       { type: 'separator' },
       {
-        label: 'Quit Edge-Drop',
+        label: '退出 Edge-Drop',
         click: () => {
           app.quit()
         }

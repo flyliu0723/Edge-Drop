@@ -49,14 +49,14 @@ const KIND_INFO: Record<FileKind, FileKindInfo> = {
   pdf: { kind: 'pdf', label: 'PDF', color: '#E53935' },
   word: { kind: 'word', label: 'Word', color: '#2B579A' },
   excel: { kind: 'excel', label: 'Excel', color: '#217346' },
-  powerpoint: { kind: 'powerpoint', label: 'Slides', color: '#D24726' },
-  archive: { kind: 'archive', label: 'Archive', color: '#B0621A' },
-  text: { kind: 'text', label: 'Text', color: '#9AA0A6' },
-  code: { kind: 'code', label: 'Code', color: '#26A69A' },
-  audio: { kind: 'audio', label: 'Audio', color: '#8E44AD' },
-  video: { kind: 'video', label: 'Video', color: '#8E44AD' },
-  image: { kind: 'image', label: 'Image', color: '#E91E63' },
-  file: { kind: 'file', label: 'File', color: '#9AA0A6' }
+  powerpoint: { kind: 'powerpoint', label: '幻灯片', color: '#D24726' },
+  archive: { kind: 'archive', label: '压缩包', color: '#B0621A' },
+  text: { kind: 'text', label: '文本', color: '#9AA0A6' },
+  code: { kind: 'code', label: '代码', color: '#26A69A' },
+  audio: { kind: 'audio', label: '音频', color: '#8E44AD' },
+  video: { kind: 'video', label: '视频', color: '#8E44AD' },
+  image: { kind: 'image', label: '图片', color: '#E91E63' },
+  file: { kind: 'file', label: '文件', color: '#9AA0A6' }
 }
 
 /** Extract the lowercase extension (no dot) from a path. */

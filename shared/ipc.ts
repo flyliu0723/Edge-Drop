@@ -9,7 +9,15 @@
  *   - `Renderer -> Main` calls (invoke/handle) are listed in `InvokeMap`.
  *   - `Main -> Renderer` events (send/on) are listed in `EventMap`.
  */
-import type { ClipboardItemDto, DragRequest, MergeResult, Settings } from './types'
+import type {
+  ClipboardItemDto,
+  DragRequest,
+  MergeResult,
+  Settings,
+  TransferStateDto,
+  TransferTarget,
+  QrResult
+} from './types'
 
 /* ------------------------------------------------------------------ */
 /* Renderer -> Main  (ipcMain.handle / ipcRenderer.invoke)            */
@@ -47,6 +55,12 @@ export interface InvokeMap {
   /** Add local file paths dragged into the shelf. */
   'item:add-files': { args: [paths: string[]]; result: ClipboardItemDto[] }
 
+  /** Add a text selection dragged into the shelf. */
+  'item:add-text': { args: [text: string, html?: string]; result: ClipboardItemDto[] }
+
+  /** Fetch and add an image dragged in from a browser (by URL). */
+  'item:add-image-url': { args: [url: string]; result: ClipboardItemDto[] }
+
   /** Merge an item into another. Returns why it failed (full / incompatible). */
   'item:merge': { args: [sourceId: string, targetId: string]; result: MergeResult }
 
@@ -64,6 +78,41 @@ export interface InvokeMap {
 
   /** Check for application updates on GitHub releases. */
   'app:check-update': { args: []; result: { latestVersion: string; downloadUrl: string } | null }
+
+  /** List valid panel anchor positions (outer display edges only). */
+  'displays:list-anchors': { args: []; result: import('./types').AnchorOption[] }
+
+  /* ---- 局域网传到手机 ---- */
+
+  /** 返回暂存箱状态（包列表 + 局域网信息）。 */
+  'transfer:list': { args: []; result: TransferStateDto }
+
+  /** 往默认暂存箱添加本地文件路径。 */
+  'transfer:stage-file': { args: [paths: string[]]; result: TransferStateDto }
+
+  /** 把剪贴板历史中的一项加入暂存箱。 */
+  'transfer:stage-item': { args: [itemId: string]; result: TransferStateDto }
+
+  /** 把当前系统剪贴板内容加入暂存箱。 */
+  'transfer:stage-clipboard': { args: []; result: TransferStateDto }
+
+  /** 从暂存箱移除单项（会使该包当前二维码失效）。 */
+  'transfer:remove-item': { args: [bundleId: string, itemId: string]; result: TransferStateDto }
+
+  /** 清空 / 删除整个暂存箱包。 */
+  'transfer:remove-bundle': { args: [bundleId: string]; result: TransferStateDto }
+
+  /** 为剪贴板单项或整个暂存箱包生成二维码。 */
+  'transfer:generate-qr': { args: [target: TransferTarget]; result: QrResult }
+
+  /** 手动作废二维码 token。 */
+  'transfer:revoke-qr': { args: [token: string]; result: boolean }
+
+  /** 弹出系统文件选择框，返回选中路径（未选则为空数组）。 */
+  'transfer:pick-files': { args: []; result: string[] }
+
+  /** 手动选择用于二维码的局域网 IP（null = 自动）。 */
+  'transfer:set-lan-ip': { args: [ip: string | null]; result: TransferStateDto }
 }
 
 /* ------------------------------------------------------------------ */
@@ -98,6 +147,8 @@ export interface EventMap {
    * payload: { x, y, inEdge, inZone }
    */
   'window:cursor-edge': [data: { x: number; y: number; inEdge: boolean; inZone: boolean }]
+  /** 暂存箱 / 活跃二维码状态变更。 */
+  'transfer:state': [state: TransferStateDto]
 }
 
 /* ------------------------------------------------------------------ */

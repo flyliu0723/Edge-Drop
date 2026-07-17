@@ -17,6 +17,12 @@
   overflow: hidden;
 }
 
+/* 打开更多菜单时允许溢出，避免下拉被卡片裁切 */
+.item.menu-open {
+  overflow: visible;
+  z-index: 30;
+}
+
 .item:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.15);
@@ -214,7 +220,8 @@
 }
 
 .item-main:hover .actions,
-.item-main:focus-within .actions {
+.item-main:focus-within .actions,
+.item-main .actions:has(.item-more-menu) {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(-50%) translateX(0) scale(1);
@@ -241,6 +248,62 @@
 .act.active {
   color: #fff;
   background: rgba(255, 255, 255, 0.25);
+}
+
+.item-more {
+  position: relative;
+}
+
+.item-more-menu {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% + 6px);
+  right: 0;
+  min-width: 132px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(18, 18, 20, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.item-more-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.item-more-item.danger {
+  color: rgba(255, 130, 130, 0.95);
+}
+
+.item-more-item.danger:hover:not(:disabled) {
+  background: rgba(255, 60, 60, 0.15);
+  color: #ff6b6b;
+}
+
+.item-more-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* ------------------------------------------------------------------ */
@@ -499,7 +562,16 @@
   }
 }
 
-.split-dropzone {
+.split-dropzone.split-dropzone-right {
+  left: auto;
+  right: 0;
+}
+
+.split-dropzone.split-dropzone-right .glow-line {
+  margin-left: auto;
+  margin-right: 0;
+}
+
   position: absolute;
   left: 0;
   top: 50%;

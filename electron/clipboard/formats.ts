@@ -311,3 +311,16 @@ export function clipboardSignature(): string {
 export function isUrlText(s: string): boolean {
   return URL_RE.test(s)
 }
+
+/**
+ * Build a text `ItemData` from raw text (+ optional HTML), classifying it as
+ * URL / color the same way the clipboard reader does. Used by drag-in of text
+ * selections from other apps.
+ */
+export function buildTextData(text: string, html?: string): Extract<ItemData, { kind: 'text' }> {
+  const trimmed = text.trim()
+  const normalizedHtml = html && html.trim() && html.trim() !== trimmed ? html.trim() : undefined
+  const isUrl = URL_RE.test(trimmed) && trimmed.length < 500
+  const isColor = COLOR_HEX_RE.test(trimmed)
+  return { kind: 'text', text: trimmed, html: normalizedHtml, isUrl, isColor }
+}

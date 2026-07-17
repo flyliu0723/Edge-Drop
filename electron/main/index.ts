@@ -11,18 +11,26 @@
 import { app, BrowserWindow, protocol, session } from 'electron'
 import { APP_CONFIG, runtime } from './config'
 import { ensureDirs, cleanTemp, PATHS } from '../store/paths'
-import { createWindow, getMainWindow, setInteractive, setVisible, startCursorPoll, stopCursorPoll, stopHeartbeat, setHotZoneWidth } from './window'
+import { createWindow, getMainWindow, setInteractive, setVisible, startCursorPoll, stopCursorPoll, stopHeartbeat, setHotZoneWidth, setAnchorConfig } from './window'
 import { createTray, registerIncognitoApplier } from './tray'
 import { registerIpc, registerSendListeners } from './ipc'
 import { prewarmDragIcons } from './drag'
 import { initState, getWatcher, loadSettings, pushState, stopStateTimers } from './state'
 import { createOnboardingWindow } from './onboardingWindow'
+import { startTransferServer, stopTransferServer } from '../transfer/server'
 import { join } from 'node:path'
 import { existsSync, createReadStream } from 'node:fs'
 import { createHash } from 'node:crypto'
 
 // Restrict the renderer to a single webContents and forbid remote module usage.
 app.enableSandbox()
+
+// Transparent windows on Windows can't use the per-monitor DPI compositing
+// path, so under OS display scaling the backing store is rasterized at 1x and
+// upscaled — making text and rounded corners blurry. Force 1x device scale
+// so the panel renders crisply at the cost of slightly smaller physical size.
+app.commandLine.appendSwitch('force-device-scale-factor', '1')
+app.commandLine.appendSwitch('high-dpi-support', 'true')
 
 // ---- single instance -------------------------------------------------------
 const gotLock = app.requestSingleInstanceLock()
@@ -52,6 +60,7 @@ app.on('before-quit', () => {
   stopCursorPoll()
   stopHeartbeat()
   stopStateTimers()
+  stopTransferServer()
   getWatcher().stop()
   try {
     const { globalShortcut } = require('electron')
@@ -72,6 +81,10 @@ app.whenReady().then(() => {
 
   // Register the image protocol: edgelocal://<imageId> -> images/<imageId>.png
   registerImageProtocol()
+
+  const settings = loadSettings()
+  setHotZoneWidth(settings.hotZoneWidth || 3)
+  setAnchorConfig(settings.anchorDisplayId, settings.anchorEdge)
 
   createWindow()
   startCursorPoll()
@@ -96,9 +109,10 @@ app.whenReady().then(() => {
   initState()
   prewarmDragIcons()
 
-  // Reflect settings immediately.
-  const settings = loadSettings()
-  setHotZoneWidth(settings.hotZoneWidth || 3)
+  void startTransferServer().catch((err) => {
+    console.error('[Main] transfer server failed to start:', err)
+  })
+
   if (!settings.tutorialCompleted) {
     setTimeout(() => {
       createOnboardingWindow()

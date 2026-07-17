@@ -184,23 +184,23 @@ export class ItemStore {
       const combined = [...tgtImages, ...srcImages.filter((i: { imageId: string }) => !seen.has(i.imageId))]
 
       // Enforce the per-stack cap BEFORE mutating anything.
-      if (combined.length > MAX_STACK) return { ok: false, reason: 'full', message: 'An image collection can hold a maximum of 10 items' }
+      if (combined.length > MAX_STACK) return { ok: false, reason: 'full', message: '图片堆叠最多容纳 10 项' }
       newData = { kind: 'image-collection', images: combined }
     } else if (src.data.kind === 'files' && tgt.data.kind === 'files') {
       const seen = new Set(tgt.data.paths)
       const combined = [...tgt.data.paths, ...src.data.paths.filter(p => !seen.has(p))]
 
-      if (combined.length > MAX_STACK) return { ok: false, reason: 'full', message: 'A folder bundle can hold a maximum of 10 files' }
+      if (combined.length > MAX_STACK) return { ok: false, reason: 'full', message: '文件堆叠最多容纳 10 个文件' }
       newData = { kind: 'files', paths: combined }
     }
 
     if (!newData) {
       if (srcIsImage || tgtIsImage) {
-        return { ok: false, reason: 'incompatible', message: 'Images can only be grouped with other images' }
+        return { ok: false, reason: 'incompatible', message: '图片只能与其他图片合并' }
       } else if (src.data.kind === 'files' || tgt.data.kind === 'files') {
-        return { ok: false, reason: 'incompatible', message: 'Files can only be grouped with other files' }
+        return { ok: false, reason: 'incompatible', message: '文件只能与其他文件合并' }
       }
-      return { ok: false, reason: 'incompatible', message: 'Text and links cannot be grouped together' }
+      return { ok: false, reason: 'incompatible', message: '文本和链接无法合并' }
     }
 
     // Update target item

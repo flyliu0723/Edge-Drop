@@ -8,8 +8,18 @@
  */
 import { create } from 'zustand'
 import { edge } from '../lib/edge'
-import type { ClipboardItemDto, Settings, DragRequest } from '../../shared/types'
+import type {
+  ClipboardItemDto,
+  Settings,
+  DragRequest,
+  TransferBundleDto,
+  TransferStateDto,
+  QrResult
+} from '../../shared/types'
 import { DEFAULT_SETTINGS } from '../../shared/types'
+
+/** Category filter for the shelf. UI-only, not persisted. */
+export type KindFilter = 'all' | 'text' | 'image' | 'files'
 
 function isVersionLower(current: string, latest: string): boolean {
   const parse = (v: string) => {
@@ -43,6 +53,8 @@ interface AppState {
   hydrated: boolean
   /** Free-text search filter (UI-only state). */
   query: string
+  /** Active category filter (UI-only state). */
+  kindFilter: KindFilter
   /** Whether the panel blade is expanded. */
   open: boolean
   /** Settings sheet visibility. */
@@ -57,18 +69,33 @@ interface AppState {
   currentVersion: string
   updateInfo: { hasUpdate: boolean; latestVersion: string; downloadUrl: string } | null
 
+  /* 局域网传输 */
+  transferTrayOpen: boolean
+  transferBundles: TransferBundleDto[]
+  transferLanIp: string | null
+  transferLanIps: string[]
+  transferPort: number | null
+  transferActiveToken: string | null
+  activeQr: QrResult | null
+
   /* hydration + sync */
   hydrate: () => Promise<void>
   checkUpdate: () => Promise<void>
   setItems: (items: ClipboardItemDto[]) => void
   setSettings: (next: Settings) => void
+  setTransferState: (state: TransferStateDto) => void
 
   /* UI */
   setQuery: (q: string) => void
+  setKindFilter: (k: KindFilter) => void
   setOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean) => void
   setDragActive: (active: boolean) => void
   setInternalDragReq: (req: import('../../shared/types').DragRequest | null) => void
+  setTransferTrayOpen: (open: boolean) => void
+  setActiveQr: (qr: QrResult | null) => void
+  /** 关闭二维码弹层并作废 token。 */
+  dismissQr: () => Promise<void>
 
   /* toasts */
   pushToast: (toast: ToastMsg) => void
@@ -83,6 +110,9 @@ interface AppState {
   pasteSubitem: (req: DragRequest) => Promise<void>
   patchSettings: (patch: Partial<Settings>) => Promise<void>
   setTutorialStep: (step: number) => void
+  sendToPhone: (id: string) => Promise<void>
+  /** 把历史项加入暂存箱。 */
+  stageToTray: (id: string) => Promise<void>
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -90,6 +120,7 @@ export const useStore = create<AppState>((set, get) => ({
   settings: { ...DEFAULT_SETTINGS },
   hydrated: false,
   query: '',
+  kindFilter: 'all',
   open: false,
   settingsOpen: false,
   dragActive: false,
@@ -99,14 +130,34 @@ export const useStore = create<AppState>((set, get) => ({
   currentVersion: '',
   updateInfo: null,
 
+  transferTrayOpen: false,
+  transferBundles: [],
+  transferLanIp: null,
+  transferLanIps: [],
+  transferPort: null,
+  transferActiveToken: null,
+  activeQr: null,
+
   async hydrate() {
     const { items, settings, version } = await edge.loadState()
-    set({ 
-      items, 
-      settings, 
+    set({
+      items,
+      settings,
       currentVersion: version,
       hydrated: true
     })
+    try {
+      const tf = await edge.transferList()
+      set({
+        transferBundles: tf.bundles,
+        transferLanIp: tf.lanIp,
+        transferLanIps: tf.lanIps ?? [],
+        transferPort: tf.port,
+        transferActiveToken: tf.activeToken
+      })
+    } catch (e) {
+      console.error('transfer list failed:', e)
+    }
     get().checkUpdate().catch(console.error)
   },
 
@@ -132,11 +183,39 @@ export const useStore = create<AppState>((set, get) => ({
 
   setItems: (items) => set({ items }),
   setSettings: (next) => set({ settings: next }),
+  setTransferState: (state) =>
+    set({
+      transferBundles: state.bundles,
+      transferLanIp: state.lanIp,
+      transferLanIps: state.lanIps ?? [],
+      transferPort: state.port,
+      transferActiveToken: state.activeToken
+    }),
 
   setQuery: (query) => set({ query }),
+  setKindFilter: (kindFilter) => set({ kindFilter }),
   setOpen: (open) => set({ open }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setDragActive: (dragActive) => set({ dragActive }),
+  setTransferTrayOpen: (transferTrayOpen) => {
+    set({ transferTrayOpen })
+    edge.setTransferDropTarget(transferTrayOpen)
+  },
+  setActiveQr: (activeQr) => set({ activeQr }),
+
+  async dismissQr() {
+    const qr = get().activeQr
+    const token = qr?.token ?? get().transferActiveToken
+    set({ activeQr: null })
+    if (token) {
+      try {
+        await edge.transferRevokeQr(token)
+      } catch {
+        /* ignore */
+      }
+    }
+  },
+
   setInternalDragReq: (internalDragReq) => {
     if (internalDragReq === null) {
       set({ internalDragReq: null, dragActive: false })
@@ -197,5 +276,44 @@ export const useStore = create<AppState>((set, get) => ({
   setTutorialStep: (step) => {
     set({ tutorialStep: step })
     edge.broadcastTutorialStep(step)
+  },
+
+  async sendToPhone(id) {
+    try {
+      const qr = await edge.transferGenerateQr({ kind: 'item', id })
+      set({ activeQr: qr })
+    } catch (e) {
+      get().pushToast({
+        id: `send-${Date.now()}`,
+        message: (e as Error).message || '生成二维码失败',
+        tone: 'error'
+      })
+    }
+  },
+
+  async stageToTray(id) {
+    try {
+      const state = await edge.transferStageItem(id)
+      set({
+        transferBundles: state.bundles,
+        transferLanIp: state.lanIp,
+        transferLanIps: state.lanIps ?? [],
+        transferPort: state.port,
+        transferActiveToken: state.activeToken,
+        transferTrayOpen: true
+      })
+      edge.setTransferDropTarget(true)
+      get().pushToast({
+        id: `stage-${Date.now()}`,
+        message: '已加入暂存箱',
+        tone: 'info'
+      })
+    } catch (e) {
+      get().pushToast({
+        id: `stage-${Date.now()}`,
+        message: (e as Error).message || '加入暂存箱失败',
+        tone: 'error'
+      })
+    }
   }
 }))
